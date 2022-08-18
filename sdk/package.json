@@ -6,7 +6,8 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
-    "test": "ts-node scripts/tests.ts"
+    "test": "ts-node scripts/tests.ts",
+    "publish": "ts-node scripts/publish.ts"
   },
   "keywords": [],
   "dependencies": {
