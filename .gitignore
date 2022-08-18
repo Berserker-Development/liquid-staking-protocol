@@ -1,0 +1,7 @@
+build
+*/config.yaml
+lib
+node_modules
+*/package-lock.json
+.aptos
+.idea
