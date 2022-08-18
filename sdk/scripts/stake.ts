@@ -1,6 +1,5 @@
 import {AptosClient, FaucetClient} from "aptos";
-import {loadAdminFromConfig, TESTNET_URL, TestWallet} from "../src/utils";
-import {FAUCET_URL} from "aptos/dist/util.test";
+import {loadAdminFromConfig, TESTNET_URL, FAUCET_URL, TestWallet} from "../src/utils";
 import {Staker} from "../src/staker";
 
 const main = async () => {
@@ -10,8 +9,15 @@ const main = async () => {
     const contractAddress = admin.toPrivateKeyObject().address as string
     const wallet = new TestWallet(admin)
     const staker = await Staker.build({ aptosClient, faucetClient, wallet, contractAddress })
-    let tx = await staker.stake(10);
+
+    const balanceBefore = await staker.getAptosCoinBalance(admin.address())
+    console.log(`balance before = ${balanceBefore}`)
+
+    let tx = await staker.stake(1000);
     console.log(tx)
+
+    const balanceAfter = await staker.getAptosCoinBalance(admin.address())
+    console.log(`balance before = ${balanceAfter}`)
 }
 
 main()

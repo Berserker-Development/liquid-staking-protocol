@@ -74,17 +74,12 @@ export class Staker {
     }
 
     // QUERIES
-    // public async getAptosCoinBalance(address: MaybeHexString): Promise<number> {
-    //     const testCoinStore = (await this.aptosClient.getAccountResource(address, {
-    //         address: '0x1',
-    //         module: 'coin',
-    //         name: 'CoinStore',
-    //         generic_type_params: ['0x1::aptos_coin::AptosCoin']
-    //     })) as any as AptosCoin
-    //
-    //     const balance: string = testCoinStore.data.coin.value
-    //     return Number.parseInt(balance)
-    // }
+    public async getAptosCoinBalance(address: MaybeHexString): Promise<number> {
+        const testCoinStore = await this.aptosClient.getAccountResource(address, '0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>') as any as AptosCoin
+        const balance: string = testCoinStore.data.coin.value
+        return Number.parseInt(balance)
+    }
+
     // PAYLOADS
     public async stakePayload(newValue: number): Promise<TransactionPayloadScriptFunction> {
         return new TransactionPayloadScriptFunction(
