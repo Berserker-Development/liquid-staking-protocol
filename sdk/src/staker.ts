@@ -1,9 +1,9 @@
 import {AptosClient, FaucetClient, MaybeHexString} from 'aptos'
 import {
     AccountAddress,
-    ChainId,
-    RawTransaction, ScriptFunction,
-    TransactionPayload, TransactionPayloadScriptFunction,
+    ChainId, EntryFunction,
+    RawTransaction,
+    TransactionPayload, TransactionPayloadEntryFunction,
 } from 'aptos/dist/transaction_builder/aptos_types'
 import {IWallet} from './utils'
 import {AptosCoin} from './types'
@@ -66,7 +66,7 @@ export class Staker {
 
     // SINGING
     public async stake(amount: number) {
-        const scriptFunctionPayload: TransactionPayloadScriptFunction = await this.stakePayload(
+        const scriptFunctionPayload: TransactionPayloadEntryFunction = await this.stakePayload(
             amount
         )
         const rawTxn: RawTransaction = await this.getRawTransaction(scriptFunctionPayload)
@@ -81,9 +81,9 @@ export class Staker {
     }
 
     // PAYLOADS
-    public async stakePayload(newValue: number): Promise<TransactionPayloadScriptFunction> {
-        return new TransactionPayloadScriptFunction(
-            ScriptFunction.natural(
+    public async stakePayload(newValue: number): Promise<TransactionPayloadEntryFunction> {
+        return new TransactionPayloadEntryFunction(
+            EntryFunction.natural(
                 `${this.contractAddress}::core`,
                 'stake',
                 [],
