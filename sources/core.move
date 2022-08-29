@@ -17,7 +17,7 @@ module Staking::core {
         add_stake(account, amount);
     }
 
-//    entry fun join(account: &signer, pool_address: address) {
-//        join_validator_set(account, pool_address);
-//    }
+    entry fun join(account: &signer, pool_address: address) {
+        join_validator_set(account, pool_address);
+    }
 }
