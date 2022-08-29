@@ -7,7 +7,7 @@ import {
 } from 'aptos/dist/transaction_builder/aptos_types'
 import {IWallet} from './utils'
 import {AptosCoin} from './types'
-import {bcsSerializeUint64} from "aptos/dist/transaction_builder/bcs";
+import {bcsSerializeStr, bcsSerializeUint64} from "aptos/dist/transaction_builder/bcs";
 
 export interface StakerParams {
     aptosClient: AptosClient
@@ -73,6 +73,12 @@ export class Staker {
         return await this.signAndSend(rawTxn)
     }
 
+    public async join(poolAddress: MaybeHexString) {
+        const scriptFunctionPayload = await this.joinPayload(poolAddress);
+        const rawTxn: RawTransaction = await this.getRawTransaction(scriptFunctionPayload)
+        return await this.signAndSend(rawTxn)
+    }
+
     // QUERIES
     public async getAptosCoinBalance(address: MaybeHexString): Promise<number> {
         const testCoinStore = await this.aptosClient.getAccountResource(address, '0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>') as any as AptosCoin
@@ -92,4 +98,14 @@ export class Staker {
         )
     }
 
+    public async joinPayload(poolAddress: MaybeHexString): Promise<TransactionPayloadEntryFunction> {
+        return new TransactionPayloadEntryFunction(
+            EntryFunction.natural(
+                `${this.contractAddress}::core`,
+                'join',
+                [],
+                [bcsSerializeStr(poolAddress.toString())]
+            )
+        )
+    }
 }
