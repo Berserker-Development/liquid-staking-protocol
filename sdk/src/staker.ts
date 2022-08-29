@@ -73,6 +73,12 @@ export class Staker {
         return await this.signAndSend(rawTxn)
     }
 
+    public async addValidator() {
+        const scriptFunctionPayload: TransactionPayloadEntryFunction = await this.addValidatorPayload()
+        const rawTxn: RawTransaction = await this.getRawTransaction(scriptFunctionPayload)
+        return await this.signAndSend(rawTxn)
+    }
+
     public async join(poolAddress: MaybeHexString) {
         const scriptFunctionPayload = await this.joinPayload(poolAddress);
         const rawTxn: RawTransaction = await this.getRawTransaction(scriptFunctionPayload)
@@ -105,6 +111,17 @@ export class Staker {
                 'join',
                 [],
                 [bcsSerializeStr(poolAddress.toString())]
+            )
+        )
+    }
+
+    public async addValidatorPayload() {
+        return new TransactionPayloadEntryFunction(
+            EntryFunction.natural(
+                `${this.contractAddress}::core`,
+                'add_validator',
+                [],
+                []
             )
         )
     }
