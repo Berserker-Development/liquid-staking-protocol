@@ -7,6 +7,8 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "publish": "ts-node scripts/publish.ts",
+    "compile": "ts-node scripts/compile.ts",
+    "unit-test": "ts-node scripts/unit-tests.ts",
     "stake": "ts-node scripts/stake.ts",
     "join": "ts-node scripts/join.ts",
     "add-validator": "ts-node scripts/add-validator.ts"

@@ -7,7 +7,8 @@ import {
   TransactionPayload,
   TransactionPayloadEntryFunction
 } from 'aptos/dist/transaction_builder/aptos_types'
-import { APTOS_FRAMEWORK, IWallet } from './utils'
+
+import { IWallet } from './utils'
 import { ValidatorSet } from './interfaces'
 import { AptosCoin } from './types'
 import { bcsSerializeStr, bcsSerializeUint64 } from 'aptos/dist/transaction_builder/bcs'
@@ -80,13 +81,8 @@ export class Staker {
     return await this.signAndSend(rawTxn)
   }
 
-  public async getValidatorSet() {
-    return (await this.aptosClient.getAccountResource('0x1', `0x1::stake::ValidatorSet`))
-      .data as ValidatorSet
-  }
-
-  public async join(poolAddress: MaybeHexString) {
-    const scriptFunctionPayload = await this.joinPayload(poolAddress)
+  public async join() {
+    const scriptFunctionPayload = await this.joinPayload()
     const rawTxn: RawTransaction = await this.getRawTransaction(scriptFunctionPayload)
     return await this.signAndSend(rawTxn)
   }
@@ -99,6 +95,10 @@ export class Staker {
     )) as any as AptosCoin
     const balance: string = testCoinStore.data.coin.value
     return Number.parseInt(balance)
+  }
+  public async getValidatorSet() {
+    return (await this.aptosClient.getAccountResource('0x1', `0x1::stake::ValidatorSet`))
+      .data as ValidatorSet
   }
 
   // PAYLOADS
@@ -113,14 +113,9 @@ export class Staker {
     )
   }
 
-  public async joinPayload(poolAddress: MaybeHexString): Promise<TransactionPayloadEntryFunction> {
+  public async joinPayload(): Promise<TransactionPayloadEntryFunction> {
     return new TransactionPayloadEntryFunction(
-      EntryFunction.natural(
-        `${this.contractAddress}::core`,
-        'join',
-        [],
-        [bcsSerializeStr(poolAddress.toString())]
-      )
+      EntryFunction.natural(`${this.contractAddress}::core`, 'join', [], [])
     )
   }
 
