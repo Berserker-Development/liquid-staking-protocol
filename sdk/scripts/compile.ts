@@ -1,8 +1,7 @@
-import { AptosAccount } from 'aptos'
-import { compile } from '../src/utils'
+import { compile, loadAdminFromConfig } from '../src/utils'
 
 const main = async () => {
-  const admin = new AptosAccount()
+  const admin = await loadAdminFromConfig()
   await compile(admin)
 }
 
