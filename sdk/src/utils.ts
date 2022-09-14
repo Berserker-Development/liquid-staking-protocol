@@ -114,7 +114,6 @@ export const loadAdminFromConfig = async (): Promise<AptosAccount> => {
   const fileContents = await fsPromises.readFile(path.join(__dirname, CONFIG_PATH), {
     encoding: 'utf-8'
   })
-
   const config = yaml.load(fileContents) as AptosConfig
   return new AptosAccount(new HexString(config.profiles.default.private_key).toUint8Array())
 }

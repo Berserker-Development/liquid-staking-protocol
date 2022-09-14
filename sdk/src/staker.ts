@@ -7,7 +7,9 @@ import {
   TransactionPayload,
   TransactionPayloadEntryFunction
 } from 'aptos/dist/transaction_builder/aptos_types'
+
 import { IWallet } from './utils'
+import { ValidatorSet } from './interfaces'
 import { AptosCoin } from './types'
 import { bcsSerializeStr, bcsSerializeUint64 } from 'aptos/dist/transaction_builder/bcs'
 
@@ -93,6 +95,10 @@ export class Staker {
     )) as any as AptosCoin
     const balance: string = testCoinStore.data.coin.value
     return Number.parseInt(balance)
+  }
+  public async getValidatorSet() {
+    return (await this.aptosClient.getAccountResource('0x1', `0x1::stake::ValidatorSet`))
+      .data as ValidatorSet
   }
 
   // PAYLOADS
