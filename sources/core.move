@@ -84,5 +84,24 @@ module Staking::core {
 
 
 
-    
+    ////// TESTS
+
+    #[test_only]
+    use aptos_framework::coin::{is_account_registered};
+
+    #[test(admin = @Staking)]
+    public entry fun test_init(admin: &signer) acquires State, Staker {   
+        let fee = 1000;
+        init(admin, true, fee);
+        let admin_address = signer::address_of(admin);
+        let state = borrow_global<State>(admin_address);
+        let staker = borrow_global<Staker>(state.staker_address);
+
+        assert!(exists<State>(signer::address_of(admin)), 0);
+        assert!(berserker_coin::is_initialized(), 0);
+        assert!(exists<Staker>(state.staker_address), 0);
+        assert!(staker.fee == 1000, 0);
+        assert!(is_account_registered<AptosCoin>(state.staker_address), 0);
+        assert!(is_account_registered<BsAptos>(state.staker_address), 0);
+    }
 }
