@@ -4,7 +4,8 @@ import * as path from 'path'
 import { promises as fsPromises } from 'fs'
 import { RawTransaction } from 'aptos/dist/transaction_builder/aptos_types'
 
-export const TESTNET_URL = 'https://fullnode.devnet.aptoslabs.com/v1'
+// export const TESTNET_URL = 'https://fullnode.devnet.aptoslabs.com/v1'
+export const TESTNET_URL = 'http://rpc.aptos.nightly.app'
 export const FAUCET_URL = 'https://faucet.devnet.aptoslabs.com'
 export const VALIDATOR_PUBKEY = '7a4b42b50d724ad70e4ea56c1e4d4c5c9cc94d56ad5b1690214ba84f39cea46e'
 export const VALIDATOR_PRIVKEY =
@@ -48,7 +49,7 @@ export class TestWallet implements IWallet {
 export const init = async (nodeUrl: string = TESTNET_URL, faucet: string = FAUCET_URL) => {
   console.log('init new keys...')
 
-  const init = 'cd .. && aptos init' + ' --rest-url' + nodeUrl + ' --faucet-url' + faucet
+  const init = 'cd .. && aptos init' + ' --rest-url ' + nodeUrl + ' --faucet-url ' + faucet
   await execShellCommand(init)
 }
 
