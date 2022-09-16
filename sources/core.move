@@ -29,27 +29,29 @@ module Staking::core {
 
     /// INIT
     entry fun init(admin: &signer, monitor_supply: bool, fee: u64) {
-        
         assert!(!exists<State>(signer::address_of(admin)), STATE_ALREADY_INITIALIZED);
         assert!(!berserker_coin::is_initialized(), COIN_ALREADY_INITIALIZED);
 
-        
-
+        // create staker resource account
         let (staker_signer, staker_signer_cap) = account::create_resource_account(admin, STAKER_SEED);
-        move_to<State>(admin, State { staker_address: signer::address_of(&staker_signer) });
-        coin::register<AptosCoin>(&staker_signer);
 
+        // init state
+        move_to<State>(admin, State { staker_address: signer::address_of(&staker_signer) });
+        
+        // init staker resource
         move_to<Staker>(&staker_signer, Staker {
             fee: fee,
-            staker_signer_cap: staker_signer_cap,
+            staker_signer_cap
         });
 
 
-        ///// init berserker coin
+        // init berserker coin
         initialize_bsaptos(
             admin, monitor_supply
         );
 
+        // register coins to ressource account
+        coin::register<AptosCoin>(&staker_signer);
         coin::register<BsAptos>(&staker_signer);
     }
 
