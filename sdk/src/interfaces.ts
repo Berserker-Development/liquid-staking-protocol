@@ -1,7 +1,11 @@
-import { AptosAccount, AptosClient, FaucetClient, HexString } from 'aptos'
-import { Address } from 'aptos/dist/generated'
-import { RawTransaction } from 'aptos/dist/transaction_builder/aptos_types'
+import { AptosAccount, AptosClient, BCS, FaucetClient } from 'aptos'
+import { Address, RawTransaction } from './types'
 
+export interface AptosCoin {
+  data: {
+    coin: { value: string }
+  }
+}
 export interface StakerResource {
   fee: number
   stakerSignerCap: SignerCapability
@@ -46,6 +50,8 @@ export interface AptosConfig {
     }
   }
 }
+
+export const { bcsSerializeUint64, bcsSerializeBool } = BCS
 
 export interface IWallet {
   signTransaction: (tx: RawTransaction) => Promise<Uint8Array>

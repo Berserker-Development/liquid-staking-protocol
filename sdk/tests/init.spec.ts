@@ -10,7 +10,7 @@ import {
 import { Staker } from '../src/staker'
 import assert from 'assert'
 import { StakerParams, StakerResource } from '../src/interfaces'
-import { Address } from 'aptos/dist/generated'
+import { Address } from '../src/types'
 
 describe('Init staker', () => {
   let aptosClient: AptosClient
@@ -46,7 +46,7 @@ describe('Init staker', () => {
   it('init', async () => {
     const stakerFee: number = 100
     const hashIx = await staker.init(true, stakerFee)
-    console.log(hashIx)
+    console.log('\x1b[33m Tx hash ', hashIx)
     const stakerResource: StakerResource = await staker.getStakerResource()
 
     assert(stakerResource.fee === stakerFee, 'Invalid staker fee')
