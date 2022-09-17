@@ -16,6 +16,7 @@ import {
   TransactionPayload,
   TransactionPayloadEntryFunction as TransactionPayloadEntry
 } from './types'
+import toHex from 'to-hex'
 
 const { AccountAddress, ChainId, EntryFunction, TransactionPayloadEntryFunction, RawTransaction } =
   TxnBuilderTypes
@@ -45,7 +46,6 @@ export class Staker {
   }
 
   private getResourceAccountAddress(address: HexString, seed: string) {
-    const toHex = require('to-hex')
     const seedHex: string = toHex(seed)
     const addressArray: Uint8Array = address.toUint8Array()
     const seedArray: Uint8Array = Uint8Array.from(Buffer.from(seedHex, 'hex'))

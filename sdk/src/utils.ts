@@ -5,6 +5,7 @@ import { promises as fsPromises } from 'fs'
 import { AptosConfig, IWallet } from './interfaces'
 import { sha3_256 } from 'js-sha3'
 import { RawTransaction } from './types'
+import toHex from 'to-hex'
 
 export const TESTNET_URL = 'https://fullnode.devnet.aptoslabs.com/v1'
 //export const TESTNET_URL = 'https://rpc.aptos.nightly.app'
@@ -34,7 +35,6 @@ export class TestWallet implements IWallet {
 }
 
 export const getResourceAccountAddress = (address: HexString, seed: string) => {
-  const toHex = require('to-hex')
   const seedHex: string = toHex(seed)
   const addressArray: Uint8Array = address.toUint8Array()
   const seedArray: Uint8Array = Uint8Array.from(Buffer.from(seedHex, 'hex'))
