@@ -1,31 +1,19 @@
-import { AptosAccount, AptosClient, HexString, MaybeHexString } from 'aptos'
+import { AptosAccount, AptosClient, HexString } from 'aptos'
 import * as yaml from 'js-yaml'
 import * as path from 'path'
 import { promises as fsPromises } from 'fs'
-import { RawTransaction } from 'aptos/dist/transaction_builder/aptos_types'
+import { AptosConfig, IWallet } from './interfaces'
+import { sha3_256 } from 'js-sha3'
+import { RawTransaction } from './types'
+import toHex from 'to-hex'
 
-// export const TESTNET_URL = 'https://fullnode.devnet.aptoslabs.com/v1'
-export const TESTNET_URL = 'http://rpc.aptos.nightly.app'
+export const TESTNET_URL = 'https://fullnode.devnet.aptoslabs.com/v1'
+//export const TESTNET_URL = 'https://rpc.aptos.nightly.app'
 export const FAUCET_URL = 'https://faucet.devnet.aptoslabs.com'
 export const VALIDATOR_PUBKEY = '7a4b42b50d724ad70e4ea56c1e4d4c5c9cc94d56ad5b1690214ba84f39cea46e'
 export const VALIDATOR_PRIVKEY =
   '0xb2e9ca5a61a842d75e29a5cb9cea053af9847f61e5abf2f4ff517d77ad066568'
 const CONFIG_PATH = '../.aptos/config.yaml'
-
-export interface AptosConfig {
-  profiles: {
-    default: {
-      private_key: string
-    }
-  }
-}
-
-export interface IWallet {
-  signTransaction: (tx: RawTransaction) => Promise<Uint8Array>
-  signAllTransactions: (txs: RawTransaction[]) => Promise<Uint8Array[]>
-  account: AptosAccount
-}
-
 export class TestWallet implements IWallet {
   account: AptosAccount
 
@@ -44,6 +32,13 @@ export class TestWallet implements IWallet {
 
     return signedTxs
   }
+}
+
+export const getResourceAccountAddress = (address: HexString, seed: string) => {
+  const seedHex: string = toHex(seed)
+  const addressArray: Uint8Array = address.toUint8Array()
+  const seedArray: Uint8Array = Uint8Array.from(Buffer.from(seedHex, 'hex'))
+  return sha3_256(new Uint8Array([...addressArray, ...seedArray]))
 }
 
 export const init = async (nodeUrl: string = TESTNET_URL, faucet: string = FAUCET_URL) => {

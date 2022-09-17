@@ -1,30 +1,33 @@
-import { AptosClient, FaucetClient, MaybeHexString } from 'aptos'
+import { AptosClient, BCS, FaucetClient, HexString, MaybeHexString, TxnBuilderTypes } from 'aptos'
+
 import {
-  AccountAddress,
-  ChainId,
-  EntryFunction,
-  RawTransaction,
+  IWallet,
+  StakerParams,
+  StakerResource,
+  ValidatorSet,
+  AptosCoin,
+  bcsSerializeUint64,
+  bcsSerializeBool
+} from './interfaces'
+import { sha3_256 } from 'js-sha3'
+import {
+  Address,
+  RawTransaction as RawTxn,
   TransactionPayload,
-  TransactionPayloadEntryFunction
-} from 'aptos/dist/transaction_builder/aptos_types'
+  TransactionPayloadEntryFunction as TransactionPayloadEntry
+} from './types'
+import toHex from 'to-hex'
 
-import { IWallet } from './utils'
-import { ValidatorSet } from './interfaces'
-import { AptosCoin } from './types'
-import { bcsSerializeStr, bcsSerializeUint64 } from 'aptos/dist/transaction_builder/bcs'
-
-export interface StakerParams {
-  aptosClient: AptosClient
-  faucetClient: FaucetClient
-  wallet: IWallet
-  contractAddress: string
-}
+const { AccountAddress, ChainId, EntryFunction, TransactionPayloadEntryFunction, RawTransaction } =
+  TxnBuilderTypes
+const STAKER_SEED = 'Staker'
 
 export class Staker {
   private aptosClient: AptosClient
   private faucetClient: FaucetClient
   private wallet: IWallet
-  private contractAddress: string
+  private contractAddress: Address
+  private stakerResourceAddress: Address
 
   private constructor(params: StakerParams) {
     const { aptosClient, faucetClient, wallet, contractAddress } = params
@@ -32,19 +35,39 @@ export class Staker {
     this.faucetClient = faucetClient
     this.wallet = wallet
     this.contractAddress = contractAddress
+    this.stakerResourceAddress = this.getResourceAccountAddress(
+      new HexString(contractAddress),
+      STAKER_SEED
+    )
   }
 
   public static async build(params: StakerParams): Promise<Staker> {
     return new Staker(params)
   }
 
-  public async getRawTransaction(payload: TransactionPayload): Promise<RawTransaction> {
+  private getResourceAccountAddress(address: HexString, seed: string) {
+    const seedHex: string = toHex(seed)
+    const addressArray: Uint8Array = address.toUint8Array()
+    const seedArray: Uint8Array = Uint8Array.from(Buffer.from(seedHex, 'hex'))
+    return sha3_256(new Uint8Array([...addressArray, ...seedArray]))
+  }
+
+  public async init(monitorSupply: boolean, amount: number) {
+    const scriptFunctionPayload: TransactionPayloadEntry = await this.initPayload(
+      monitorSupply,
+      amount
+    )
+    const rawTxn: RawTxn = await this.getRawTransaction(scriptFunctionPayload)
+    return await this.signAndSend(rawTxn)
+  }
+
+  public async getRawTransaction(payload: TransactionPayload): Promise<RawTxn> {
     const [{ sequence_number: sequenceNumber }, chainId] = await Promise.all([
       this.aptosClient.getAccount(this.wallet.account.address()),
       this.aptosClient.getChainId()
     ])
 
-    const rawTxn: RawTransaction = new RawTransaction(
+    const rawTxn: RawTxn = new RawTransaction(
       AccountAddress.fromHex(this.wallet.account.address()), // from
       BigInt(sequenceNumber), // sequence number
       payload, // payload
@@ -57,7 +80,7 @@ export class Staker {
     return rawTxn
   }
 
-  async signAndSend(rawTx: RawTransaction) {
+  async signAndSend(rawTx: RawTxn) {
     const signedTxn: Uint8Array = await this.wallet.signTransaction(rawTx)
     const res = await this.aptosClient.submitSignedBCSTransaction(signedTxn)
     await this.aptosClient.waitForTransaction(res.hash)
@@ -70,20 +93,20 @@ export class Staker {
 
   // SINGING
   public async stake(amount: number) {
-    const scriptFunctionPayload: TransactionPayloadEntryFunction = await this.stakePayload(amount)
-    const rawTxn: RawTransaction = await this.getRawTransaction(scriptFunctionPayload)
+    const scriptFunctionPayload: TransactionPayloadEntry = await this.stakePayload(amount)
+    const rawTxn: RawTxn = await this.getRawTransaction(scriptFunctionPayload)
     return await this.signAndSend(rawTxn)
   }
 
   public async addValidator() {
-    const scriptFunctionPayload: TransactionPayloadEntryFunction = await this.addValidatorPayload()
-    const rawTxn: RawTransaction = await this.getRawTransaction(scriptFunctionPayload)
+    const scriptFunctionPayload: TransactionPayloadEntry = await this.addValidatorPayload()
+    const rawTxn: RawTxn = await this.getRawTransaction(scriptFunctionPayload)
     return await this.signAndSend(rawTxn)
   }
 
   public async join() {
     const scriptFunctionPayload = await this.joinPayload()
-    const rawTxn: RawTransaction = await this.getRawTransaction(scriptFunctionPayload)
+    const rawTxn: RawTxn = await this.getRawTransaction(scriptFunctionPayload)
     return await this.signAndSend(rawTxn)
   }
 
@@ -96,13 +119,39 @@ export class Staker {
     const balance: string = testCoinStore.data.coin.value
     return Number.parseInt(balance)
   }
-  public async getValidatorSet() {
+
+  public async getValidatorSet(): Promise<ValidatorSet> {
     return (await this.aptosClient.getAccountResource('0x1', `0x1::stake::ValidatorSet`))
       .data as ValidatorSet
   }
 
+  async getStakerResource(): Promise<StakerResource> {
+    const data = (
+      await this.aptosClient.getAccountResource(
+        this.stakerResourceAddress,
+        `${this.contractAddress}::core::Staker`
+      )
+    ).data as any
+
+    return {
+      fee: Number(data.fee),
+      stakerSignerCap: data.staker_signer_cap
+    }
+  }
+
   // PAYLOADS
-  public async stakePayload(newValue: number): Promise<TransactionPayloadEntryFunction> {
+  public async initPayload(monitorSupply: boolean, fee: number): Promise<TransactionPayloadEntry> {
+    return new TransactionPayloadEntryFunction(
+      EntryFunction.natural(
+        `${this.contractAddress}::core`,
+        'init',
+        [],
+        [bcsSerializeBool(monitorSupply), BCS.bcsSerializeUint64(fee)]
+      )
+    )
+  }
+
+  public async stakePayload(newValue: number): Promise<TransactionPayloadEntry> {
     return new TransactionPayloadEntryFunction(
       EntryFunction.natural(
         `${this.contractAddress}::core`,
@@ -113,13 +162,13 @@ export class Staker {
     )
   }
 
-  public async joinPayload(): Promise<TransactionPayloadEntryFunction> {
+  public async joinPayload(): Promise<TransactionPayloadEntry> {
     return new TransactionPayloadEntryFunction(
       EntryFunction.natural(`${this.contractAddress}::core`, 'join', [], [])
     )
   }
 
-  public async addValidatorPayload() {
+  public async addValidatorPayload(): Promise<TransactionPayloadEntry> {
     return new TransactionPayloadEntryFunction(
       EntryFunction.natural(`${this.contractAddress}::core`, 'add_validator', [], [])
     )

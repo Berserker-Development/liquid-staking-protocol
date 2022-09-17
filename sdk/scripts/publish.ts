@@ -1,5 +1,4 @@
 import { AptosAccount, FaucetClient } from 'aptos'
-import { ApiError } from 'aptos/dist/generated'
 import {
   compileAndDeploy,
   FAUCET_URL,
