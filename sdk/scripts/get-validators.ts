@@ -13,6 +13,8 @@ const main = async () => {
   const validatorSet: ValidatorSet = await staker.getValidatorSet()
   const addresses = validatorSet.active_validators.map(validator => validator.addr)
   console.log(addresses)
+  const stakingConfig = await staker.getStakingConfig()
+  console.log(stakingConfig)
 }
 
 main()
