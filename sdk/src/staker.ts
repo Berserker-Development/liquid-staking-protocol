@@ -1,13 +1,13 @@
 import { AptosClient, BCS, FaucetClient, HexString, MaybeHexString, TxnBuilderTypes } from 'aptos'
 
 import {
+  AptosCoin,
+  bcsSerializeBool,
+  bcsSerializeUint64,
   IWallet,
   StakerParams,
-  StakerResource,
-  ValidatorSet,
-  AptosCoin,
-  bcsSerializeUint64,
-  bcsSerializeBool
+  StakerResource, StakingConfig,
+  ValidatorSet
 } from './interfaces'
 import { sha3_256 } from 'js-sha3'
 import {
@@ -137,6 +137,18 @@ export class Staker {
       fee: Number(data.fee),
       stakerSignerCap: data.staker_signer_cap
     }
+  }
+
+  public async getStakePool(owner: MaybeHexString) {
+    return (await this.aptosClient.getAccountResource(owner, `0x1::stake::StakePool`)).data as any
+  }
+
+  public async getValidatorConfig(owner: MaybeHexString) {
+    return (await this.aptosClient.getAccountResource(owner, `0x1::stake::ValidatorConfig`)).data as any
+  }
+
+  public async getStakingConfig() {
+    return (await this.aptosClient.getAccountResource('0x1', '0x1::staking_config::StakingConfig')).data as StakingConfig
   }
 
   // PAYLOADS

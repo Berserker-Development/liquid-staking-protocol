@@ -6,6 +6,7 @@ export interface AptosCoin {
     coin: { value: string }
   }
 }
+
 export interface StakerResource {
   fee: number
   stakerSignerCap: SignerCapability
@@ -14,6 +15,17 @@ export interface StakerResource {
 export interface SignerCapability {
   account: Address
 }
+
+export interface StakingConfig {
+  allow_validator_set_change: boolean,
+  maximum_stake: string,
+  minimum_stake: string,
+  recurring_lockup_duration_secs: string,
+  rewards_rate: string,
+  rewards_rate_denominator: string,
+  voting_power_increase_limit: string
+}
+
 export interface StakerParams {
   aptosClient: AptosClient
   faucetClient: FaucetClient

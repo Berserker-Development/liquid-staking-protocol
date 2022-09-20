@@ -13,7 +13,8 @@
     "unit-test": "ts-node scripts/unit-tests.ts",
     "stake": "ts-node scripts/stake.ts",
     "join": "ts-node scripts/join.ts",
-    "add-validator": "ts-node scripts/add-validator.ts"
+    "add-validator": "ts-node scripts/add-validator.ts",
+    "get-validators": "ts-node scripts/get-validators.ts"
   },
   "keywords": [],
   "dependencies": {
