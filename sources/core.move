@@ -112,7 +112,8 @@ module Staking::core {
 
     #[test_only]
     use aptos_framework::coin::{is_account_registered};
-    use 0x1::aptos_coin::{Self};
+    //use aptos_framework::aptos_coin::{Self};
+    use aptos_framework::stake::{initialize_for_test, mint };
 
     #[test(admin = @Staking)]
     public entry fun test_init(admin: &signer) acquires State, Staker {   
@@ -132,19 +133,15 @@ module Staking::core {
 
     #[test(admin = @Staking, aptos_framework = @0x1)]
     public entry fun test_get_all_aptos_under_control(admin: &signer, aptos_framework: &signer) {   
-        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
-        // mint tokens to buyer
+        initialize_for_test(aptos_framework);
+
         account::create_account_for_test(signer::address_of(admin));
         coin::register<AptosCoin>(admin);
-        coin::deposit(signer::address_of(admin), coin::mint(10000, &mint_cap));
 
-        //let protocol_fee = 1000;
-        
+        mint(admin, 1000);
         add_validator(admin);
+        assert!(get_all_aptos_under_control() == 0, 0);
         stake(admin, 100);
-        //let _controlled_aptos = get_all_aptos_under_control();
-        // //assert!(controlled_aptos == 0, 0);
-        coin::destroy_mint_cap<AptosCoin>(mint_cap);
-        coin::destroy_burn_cap<AptosCoin>(burn_cap);
+        assert!(get_all_aptos_under_control() == 100, 0);
     }
 }
