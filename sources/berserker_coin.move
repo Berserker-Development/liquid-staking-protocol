@@ -1,7 +1,8 @@
 module Staking::berserker_coin {
-    use aptos_framework::coin;
+    use aptos_framework::coin::{Self, supply};
     use aptos_framework::managed_coin::{initialize, register, mint, burn};
     use aptos_framework::signer;
+    use std::option;
 
 
     const COIN_NAME: vector<u8> = b"Berserker coin";
@@ -23,6 +24,15 @@ module Staking::berserker_coin {
         coin::is_coin_initialized<BsAptos>()
     }
 
+    public fun get_supply(): u128 {
+        let supply = &supply<BsAptos>();
+        if (option::is_some(supply)) {
+            *option::borrow(supply)
+        } else {
+            0u128
+        }
+    }
+
     #[test( mint_authority = @Staking)]
     public entry fun test_is_inittilaized(
         mint_authority: &signer
@@ -31,9 +41,6 @@ module Staking::berserker_coin {
         initialize_bsaptos(mint_authority, true);
         assert!(is_initialized(), 0);
     }
-
-    #[test_only]
-    use std::option;
 
     #[test(source = @0xa11ce, destination = @0xb0b, mint_authority = @Staking)]
     public entry fun test_berserker_coin(
