@@ -75,7 +75,8 @@ module Staking::core {
         //let bs_aptos_amount = 
         // 1 form pool TODO
 
-        // 2 from mint 
+        // 2 from mint
+           // check mint cap
 
 
 
@@ -88,7 +89,8 @@ module Staking::core {
 
         add_stake(account, aptos_amount);
     }
-
+    // TODO request unstake
+    // TODO claim aptos after end of lockup 
     entry fun unstake(account: &signer, amount: u64) {
         unlock(account, amount);
     }
@@ -97,23 +99,52 @@ module Staking::core {
 
     // calim
 
-    public fun calculate_requested_bsaptos_amount(_aptos_amount: u64): u64 {
-        //let bs_aptos_amount = coin::supply<BsAptos>()
-        return 0
-    }
+
 
     public fun get_all_aptos_under_control(): u64 {
 
         let (active, inactive, pending_active, pending_inactive) = get_stake(ADMIN);
         return active + inactive + pending_active + pending_inactive
     }
+    ////// MATH
+
+    // // calculate berserker coin amount based on aptos coin amount
+    // // bsaptos = aptos_amount * bs_aptos_supply / controlled_aptos same as 
+    // // shares = amount_value * 1/share_price where 1/share_price=total_shares/total_value
+
+    // public fun calculate_bsaptos_amount(aptos_amount: u64): u128 {
+    //     calculate_proportion(
+    //         aptos_amount,
+    //         berserker_coin::get_supply(),
+    //         get_all_aptos_under_control()
+    //     )
+    // }
+
+    // // calculate aptos coin amount based on berserker coin amount
+    // // aptos = bs_aptos_amount * controlled_aptos /  bs_aptos_supply same as 
+    // // value  = shares * share_price where share_price=total_value/total_shares
+
+    // public fun calculate_aptos_amount(bs_aptos_amount: u64): u128 {
+    //     if(!berserker_coin::get_supply()){
+    //         return bs_aptos_amount
+    //     }
+    //     calculate_proportion(
+    //         bs_aptos_amount,
+    //         get_all_aptos_under_control(),
+    //         berserker_coin::get_supply()  
+    //     )
+    // }
+
+    // public fun calculate_proportion(value: u64, nominator: u128, denominator: u128 ): u128 {
+    //     (value as u128) * nominator / denominator
+    // }
+
+
 
     ////// TESTS
 
     #[test_only]
     use aptos_framework::coin::{is_account_registered};
-    //use aptos_framework::aptos_coin::{Self};
-    use aptos_framework::stake::{initialize_for_test, mint };
 
     #[test(admin = @Staking)]
     public entry fun test_init(admin: &signer) acquires State, Staker {   
@@ -131,17 +162,67 @@ module Staking::core {
         assert!(is_account_registered<BsAptos>(state.staker_address), 0);
     }
 
+    #[test_only]
+    use aptos_framework::stake;
+    use aptos_framework::managed_coin;
+
     #[test(admin = @Staking, aptos_framework = @0x1)]
     public entry fun test_get_all_aptos_under_control(admin: &signer, aptos_framework: &signer) {   
-        initialize_for_test(aptos_framework);
+        stake::initialize_for_test(aptos_framework);
 
         account::create_account_for_test(signer::address_of(admin));
         coin::register<AptosCoin>(admin);
 
-        mint(admin, 1000);
+        stake::mint(admin, 1000);
         add_validator(admin);
         assert!(get_all_aptos_under_control() == 0, 0);
         stake(admin, 100);
         assert!(get_all_aptos_under_control() == 100, 0);
     }
+    
+    #[test_only]
+    public entry fun set_coins_amounts(
+        admin: &signer,
+        aptos_framework: &signer,
+        aptos_amount: u64,
+        bs_aptos_amount: u64
+    ) {   
+        stake::initialize_for_test(aptos_framework);
+
+        // increase controlled aptos
+        account::create_account_for_test(signer::address_of(admin));
+        coin::register<AptosCoin>(admin);
+        stake::mint(admin, aptos_amount);
+        add_validator(admin);
+        stake(admin, aptos_amount);
+
+        // mint bs aptos 
+        let admin_address = signer::address_of(admin);
+        managed_coin::mint<BsAptos>(admin, admin_address, bs_aptos_amount);
+    }
+
+    // #[test(admin = @Staking, aptos_framework = @0x1)]
+    // public entry fun test_get_all_aptos_under_control(admin: &signer, aptos_framework: &signer) {   
+    //     initialize_for_test(aptos_framework);
+
+    //     account::create_account_for_test(signer::address_of(admin));
+    //     coin::register<AptosCoin>(admin);
+
+    //     stake::mint(admin, 1000);
+    //     add_validator(admin);
+    //     assert!(get_all_aptos_under_control() == 0, 0);
+    //     stake(admin, 100);
+    //     assert!(get_all_aptos_under_control() == 100, 0);
+    // }
+
+
+
+    // #[test]
+    // public entry fun test_max() {
+    //     // mint bs aptos 
+
+    //     // increase controlled aptos 
+        
+    //     calculate_proportion()
+    // }
 }
