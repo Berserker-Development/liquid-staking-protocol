@@ -1,5 +1,5 @@
 module Staking::core {
-    use aptos_framework::stake::{add_stake, get_stake, initialize_validator, join_validator_set, unlock};
+    use aptos_framework::stake::{add_stake, get_stake, initialize_validator, join_validator_set, unlock, set_operator};
     use aptos_framework::coin;
     use aptos_framework::aptos_coin::{AptosCoin};
     use aptos_framework::account;
@@ -13,12 +13,13 @@ module Staking::core {
     const FULLNODE_ADDRESSES: vector<u8> = x"9e2e97cb8b53e8b201823a85ad8366b6a452968c171d0504ed1ba0381a72c208";
 
     const STAKER_SEED: vector<u8> = b"Staker";
-    const ADMIN: address = @Staking;
+    const ADMIN_ADDRESS: address = @Staking;
     const DENOMINATOR: u128 = 100000000000; // 10^12
     /////ERRORS
     const STATE_ALREADY_INITIALIZED: u64 = 0;
     const COIN_ALREADY_INITIALIZED: u64 = 1;
     const DIVISION_BY_ZERO: u64 = 2;
+    const INVALID_ADDRESS: u64 = 3;
 
     struct State has key {
         staker_address: address
@@ -66,6 +67,21 @@ module Staking::core {
         );
     }
 
+    entry fun set_operator_to_resource_account(admin: &signer) acquires State {
+        let state = borrow_global<State>(ADMIN_ADDRESS);
+        assert!(signer::address_of(admin) != state.staker_address, INVALID_ADDRESS);
+        set_operator(admin, state.staker_address);
+    }
+
+    // entry fun set_operator_to_admin(admin: &signer) {
+    //     assert!(signer::address_of(admin) == ADMIN_ADDRESS);
+    //     let staker_address = (borrow_global<State>(ADMIN_ADDRESS)).staker_address;
+    //     let staker = borrow_global_mut<Staker>(staker_address);
+    //     let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
+    //     assert!(admin != staker_address);
+    //     set_operator(staker, ADMIN_ADDRESS);
+    // }
+
     entry fun join(validator: &signer) {
         let validator_address = signer::address_of(validator);
         join_validator_set(validator, validator_address);
@@ -74,12 +90,14 @@ module Staking::core {
     ///// STAKE MANAGMENT
     entry fun stake(account: &signer, aptos_amount: u64) {
         // calc bsAptos amount
-        //let bs_aptos_amount = 
-        // 1 form pool TODO
+        let _bs_aptos_amount = calculate_bsaptos_amount(aptos_amount);
+        // 1 form pool // TODO
+        //let from_pool = 0; //mocked
+        // // 2 from mint
 
-        // 2 from mint
-           // check mint cap
-
+        //let _bs_aptos_amount = bs_aptos_amount - from_pool;
+        // check mint cap
+        //berserker_coin::mint(account, bs_aptos_amount);
 
 
         //transfer aptos to vault 
@@ -105,7 +123,7 @@ module Staking::core {
 
     public fun get_all_aptos_under_control(): u64 {
 
-        let (active, inactive, pending_active, pending_inactive) = get_stake(ADMIN);
+        let (active, inactive, pending_active, pending_inactive) = get_stake(ADMIN_ADDRESS);
         return active + inactive + pending_active + pending_inactive
     }
 
@@ -175,6 +193,8 @@ module Staking::core {
     #[test(admin = @Staking, aptos_framework = @0x1)]
     public entry fun test_get_all_aptos_under_control(admin: &signer, aptos_framework: &signer) {   
         stake::initialize_for_test(aptos_framework);
+        let protocol_fee = 1000;
+        init(admin, true, protocol_fee);
 
         account::create_account_for_test(signer::address_of(admin));
         coin::register<AptosCoin>(admin);
