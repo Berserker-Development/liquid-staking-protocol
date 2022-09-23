@@ -73,14 +73,14 @@ module Staking::core {
         set_operator(admin, state.staker_address);
     }
 
-    // entry fun set_operator_to_admin(admin: &signer) {
-    //     assert!(signer::address_of(admin) == ADMIN_ADDRESS);
-    //     let staker_address = (borrow_global<State>(ADMIN_ADDRESS)).staker_address;
-    //     let staker = borrow_global_mut<Staker>(staker_address);
-    //     let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
-    //     assert!(admin != staker_address);
-    //     set_operator(staker, ADMIN_ADDRESS);
-    // }
+    entry fun set_operator_to_admin(admin: &signer) acquires State, Staker {
+        assert!(signer::address_of(admin) == ADMIN_ADDRESS, INVALID_ADDRESS);
+        let state = borrow_global<State>(ADMIN_ADDRESS);
+        let staker = borrow_global<Staker>(state.staker_address);
+        let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
+        assert!(signer::address_of(admin) != state.staker_address, INVALID_ADDRESS);
+        set_operator(&staker_signer, ADMIN_ADDRESS);
+    }
 
     entry fun join(validator: &signer) {
         let validator_address = signer::address_of(validator);
