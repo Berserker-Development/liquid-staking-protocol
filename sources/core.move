@@ -116,6 +116,9 @@ module Staking::core {
     // shares = amount_value * 1/share_price where 1/share_price=bs_aptos_supply/controlled_aptos
 
     public fun calculate_bsaptos_amount(aptos_amount: u64): u64 {
+        if(berserker_coin::get_supply() == 0u64){
+            return aptos_amount
+        };
         calculate_proportion(
             aptos_amount,
             berserker_coin::get_supply(),
@@ -128,9 +131,6 @@ module Staking::core {
     // value  = shares * share_price where share_price=controlled_aptos/bs_aptos_supply
 
     public fun calculate_aptos_amount(bs_aptos_amount: u64): u64 {
-        if(berserker_coin::get_supply() == 0u64){
-            return bs_aptos_amount
-        };
         calculate_proportion(
             bs_aptos_amount,
             get_all_aptos_under_control(),
@@ -204,24 +204,39 @@ module Staking::core {
 
         // mint bs aptos 
         let admin_address = signer::address_of(admin);
+        coin::register<BsAptos>(admin);
         berserker_coin::mint(admin, admin_address, bs_aptos_amount);
     }
 
-    // #[test(admin = @Staking, aptos_framework = @0x1)]
-    // public entry fun test_get_all_aptos_under_control(admin: &signer, aptos_framework: &signer) {   
-    //     initialize_for_test(aptos_framework);
+    #[test(admin = @Staking, aptos_framework = @0x1)]
+    public entry fun test_calculate_bsaptos_amount_1(admin: &signer, aptos_framework: &signer) { 
+        init(admin, true, 100);
+        set_coins_amounts(admin, aptos_framework, 100, 100);
+        assert!(calculate_bsaptos_amount(100) == 100, 0);
+    }
 
-    //     account::create_account_for_test(signer::address_of(admin));
-    //     coin::register<AptosCoin>(admin);
+    #[test(admin = @Staking, aptos_framework = @0x1)]
+    public entry fun test_calculate_bsaptos_amount_2(admin: &signer, aptos_framework: &signer) { 
+        init(admin, true, 100);
+        set_coins_amounts(admin, aptos_framework, 1000, 2000);
+        assert!(calculate_bsaptos_amount(100) == 200, 0);
+    }
+    // TODO check more cases
 
-    //     stake::mint(admin, 1000);
-    //     add_validator(admin);
-    //     assert!(get_all_aptos_under_control() == 0, 0);
-    //     stake(admin, 100);
-    //     assert!(get_all_aptos_under_control() == 100, 0);
-    // }
+    #[test(admin = @Staking, aptos_framework = @0x1)]
+    public entry fun test_calculate_aptos_amount_1(admin: &signer, aptos_framework: &signer) { 
+        init(admin, true, 100);
+        set_coins_amounts(admin, aptos_framework, 100, 100);
+        assert!(calculate_aptos_amount(100) == 100, 0);
+    }
 
-
+    #[test(admin = @Staking, aptos_framework = @0x1)]
+    public entry fun test_calculate_aptos_amount_2(admin: &signer, aptos_framework: &signer) { 
+        init(admin, true, 100);
+        set_coins_amounts(admin, aptos_framework, 1000, 2000);
+        assert!(calculate_aptos_amount(100) == 50, 0);
+    }
+    // TODO check more cases
 
     #[test]
     public entry fun test_calculate_proportion() {
@@ -242,6 +257,6 @@ module Staking::core {
     
         assert!(calculate_proportion(100,1000,1100) == 90, 0);
 
-
+        // TODO check more cases
     }
 }
