@@ -14,9 +14,11 @@ module Staking::core {
 
     const STAKER_SEED: vector<u8> = b"Staker";
     const ADMIN: address = @Staking;
+    const DENOMINATOR: u128 = 100000000000; // 10^12
     /////ERRORS
     const STATE_ALREADY_INITIALIZED: u64 = 0;
     const COIN_ALREADY_INITIALIZED: u64 = 1;
+    const DIVISION_BY_ZERO: u64 = 2;
 
     struct State has key {
         staker_address: address
@@ -106,40 +108,45 @@ module Staking::core {
         let (active, inactive, pending_active, pending_inactive) = get_stake(ADMIN);
         return active + inactive + pending_active + pending_inactive
     }
+
     ////// MATH
 
-    // // calculate berserker coin amount based on aptos coin amount
-    // // bsaptos = aptos_amount * bs_aptos_supply / controlled_aptos same as 
-    // // shares = amount_value * 1/share_price where 1/share_price=total_shares/total_value
+    // calculate berserker coin amount based on aptos coin amount
+    // bsaptos = aptos_amount * bs_aptos_supply / controlled_aptos same as 
+    // shares = amount_value * 1/share_price where 1/share_price=bs_aptos_supply/controlled_aptos
 
-    // public fun calculate_bsaptos_amount(aptos_amount: u64): u128 {
-    //     calculate_proportion(
-    //         aptos_amount,
-    //         berserker_coin::get_supply(),
-    //         get_all_aptos_under_control()
-    //     )
-    // }
+    public fun calculate_bsaptos_amount(aptos_amount: u64): u64 {
+        calculate_proportion(
+            aptos_amount,
+            berserker_coin::get_supply(),
+            get_all_aptos_under_control()
+        )
+    }
 
-    // // calculate aptos coin amount based on berserker coin amount
-    // // aptos = bs_aptos_amount * controlled_aptos /  bs_aptos_supply same as 
-    // // value  = shares * share_price where share_price=total_value/total_shares
+    // calculate aptos coin amount based on berserker coin amount
+    // aptos = bs_aptos_amount * controlled_aptos /  bs_aptos_supply same as 
+    // value  = shares * share_price where share_price=controlled_aptos/bs_aptos_supply
 
-    // public fun calculate_aptos_amount(bs_aptos_amount: u64): u128 {
-    //     if(!berserker_coin::get_supply()){
-    //         return bs_aptos_amount
-    //     }
-    //     calculate_proportion(
-    //         bs_aptos_amount,
-    //         get_all_aptos_under_control(),
-    //         berserker_coin::get_supply()  
-    //     )
-    // }
+    public fun calculate_aptos_amount(bs_aptos_amount: u64): u64 {
+        if(berserker_coin::get_supply() == 0u64){
+            return bs_aptos_amount
+        };
+        calculate_proportion(
+            bs_aptos_amount,
+            get_all_aptos_under_control(),
+            berserker_coin::get_supply()  
+        )
+    }
 
-    // public fun calculate_proportion(value: u64, nominator: u128, denominator: u128 ): u128 {
-    //     (value as u128) * nominator / denominator
-    // }
+    public fun calculate_proportion(shares: u64, total_value: u64, total_shares: u64 ): u64 {
+        assert!(total_shares != 0u64, DIVISION_BY_ZERO);
+        let result = (to_u128(shares) * to_u128(total_value) * DENOMINATOR) / (to_u128(total_shares) * DENOMINATOR);
+        (result as u64)
+    }
 
-
+    fun to_u128(num: u64): u128 {
+        (num as u128)
+    }
 
     ////// TESTS
 
@@ -164,7 +171,6 @@ module Staking::core {
 
     #[test_only]
     use aptos_framework::stake;
-    use aptos_framework::managed_coin;
 
     #[test(admin = @Staking, aptos_framework = @0x1)]
     public entry fun test_get_all_aptos_under_control(admin: &signer, aptos_framework: &signer) {   
@@ -186,7 +192,7 @@ module Staking::core {
         aptos_framework: &signer,
         aptos_amount: u64,
         bs_aptos_amount: u64
-    ) {   
+    ) {
         stake::initialize_for_test(aptos_framework);
 
         // increase controlled aptos
@@ -198,7 +204,7 @@ module Staking::core {
 
         // mint bs aptos 
         let admin_address = signer::address_of(admin);
-        managed_coin::mint<BsAptos>(admin, admin_address, bs_aptos_amount);
+        berserker_coin::mint(admin, admin_address, bs_aptos_amount);
     }
 
     // #[test(admin = @Staking, aptos_framework = @0x1)]
@@ -217,12 +223,25 @@ module Staking::core {
 
 
 
-    // #[test]
-    // public entry fun test_max() {
-    //     // mint bs aptos 
+    #[test]
+    public entry fun test_calculate_proportion() {
 
-    //     // increase controlled aptos 
-        
-    //     calculate_proportion()
-    // }
+        // sahres           1
+        // total value      1 
+        // total shares     1
+        // result
+        // real 1 expected  1
+    
+        assert!(calculate_proportion(1,1,1) == 1, 0);
+
+        // sahres           100
+        // total value      1000
+        // total shares     1100
+        // result
+        // real 90,909090 expected 90
+    
+        assert!(calculate_proportion(100,1000,1100) == 90, 0);
+
+
+    }
 }
