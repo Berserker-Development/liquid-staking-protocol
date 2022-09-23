@@ -1,6 +1,6 @@
 module Staking::berserker_coin {
     use aptos_framework::coin::{Self, supply};
-    use aptos_framework::managed_coin::{initialize, register, mint, burn};
+    use aptos_framework::managed_coin::{Self, initialize, register, burn};
     use aptos_framework::signer;
     use std::option;
 
@@ -8,6 +8,7 @@ module Staking::berserker_coin {
     const COIN_NAME: vector<u8> = b"Berserker coin";
     const TICKER: vector<u8> = b"BSA";
     const DECIMALS: u8 = 8;
+    const MAX_U64: u64 = 18446744073709551615;
 
     struct BsAptos has key { }
 
@@ -24,13 +25,22 @@ module Staking::berserker_coin {
         coin::is_coin_initialized<BsAptos>()
     }
 
-    public fun get_supply(): u128 {
+    public fun get_supply(): u64 {
         let supply = &supply<BsAptos>();
         if (option::is_some(supply)) {
-            *option::borrow(supply)
+            (*option::borrow(supply) as u64)
         } else {
-            0u128
+            0u64
         }
+    }
+
+    public fun mint(
+        account: &signer,
+        dst_addr: address,
+        amount: u64,
+    ) {
+        assert!(get_supply() < MAX_U64, 0);
+        managed_coin::mint<BsAptos>(account, dst_addr, amount);
     }
 
     #[test( mint_authority = @Staking)]
@@ -62,8 +72,8 @@ module Staking::berserker_coin {
         register<BsAptos>(source);
         register<BsAptos>(destination);
 
-        mint<BsAptos>(mint_authority, source_addr, 50);
-        mint<BsAptos>(mint_authority, destination_addr, 10);
+        mint(mint_authority, source_addr, 50);
+        mint(mint_authority, destination_addr, 10);
         assert!(coin::balance<BsAptos>(source_addr) == 50, 1);
         assert!(coin::balance<BsAptos>(destination_addr) == 10, 2);
 
