@@ -52,7 +52,7 @@ module Staking::core {
 
         // init berserker coin
         initialize_bsaptos(
-            admin, monitor_supply
+            admin, &staker_signer, monitor_supply
         );
 
         // register coins to ressource account
@@ -97,7 +97,7 @@ module Staking::core {
 
         //let _bs_aptos_amount = bs_aptos_amount - from_pool;
         // check mint cap
-        //berserker_coin::mint(account, bs_aptos_amount);
+        // berserker_coin::mint(account, bs_aptos_amount);
 
 
         //transfer aptos to vault 
