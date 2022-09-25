@@ -1,15 +1,18 @@
 module Staking::berserker_coin {
     use aptos_framework::coin::{Self, BurnCapability, FreezeCapability, MintCapability, supply};
-    use aptos_framework::managed_coin::{Self}; //, register, burn};
     use aptos_framework::signer;
     use std::option;
     use std::string;
+    use std::error;
 
 
     const COIN_NAME: vector<u8> = b"Berserker coin";
     const TICKER: vector<u8> = b"BSA";
     const DECIMALS: u8 = 8;
     const MAX_U64: u64 = 18446744073709551615;
+
+    /// Account has no capabilities (burn/mint).
+    const ENO_CAPABILITIES: u64 = 1;
 
     struct BsAptos has key { }
 
@@ -53,13 +56,22 @@ module Staking::berserker_coin {
         }
     }
 
-    public fun mint(
+    public fun mint( // TODO add direct_mint using user sign
         account: &signer,
         dst_addr: address,
         amount: u64,
-    ) {
+    ) acquires Capabilities {
         assert!(get_supply() < MAX_U64, 0);
-        managed_coin::mint<BsAptos>(account, dst_addr, amount);
+        let account_addr = signer::address_of(account);
+
+        assert!(
+            exists<Capabilities<BsAptos>>(account_addr),
+            error::not_found(ENO_CAPABILITIES),
+        );
+
+        let capabilities = borrow_global<Capabilities<BsAptos>>(account_addr);
+        let coins_minted = coin::mint(amount, &capabilities.mint_cap);
+        coin::deposit(dst_addr, coins_minted);
     }
 
     #[test(admin = @Staking, mint_authority = @Staking)]
@@ -78,7 +90,7 @@ module Staking::berserker_coin {
         destination: &signer,
         admin: &signer,
         mint_authority: &signer
-    ) {
+    ) acquires Capabilities{
         let source_addr = signer::address_of(source);
         let destination_addr = signer::address_of(destination);
         let _admin_addr = signer::address_of(admin);
@@ -88,13 +100,13 @@ module Staking::berserker_coin {
         aptos_framework::account::create_account_for_test(mint_authority_addr);
 
         initialize_bsaptos(admin, mint_authority, true);
-        // assert!(coin::is_coin_initialized<BsAptos>(), 0);
+        assert!(coin::is_coin_initialized<BsAptos>(), 0);
 
-        // coin::register<BsAptos>(mint_authority);
-        // register<BsAptos>(source);
-        // register<BsAptos>(destination);
+        coin::register<BsAptos>(mint_authority);
+        coin::register<BsAptos>(source);
+        coin::register<BsAptos>(destination);
 
-        // mint(mint_authority, source_addr, 50);
+        mint(mint_authority, source_addr, 50);
         // mint(mint_authority, destination_addr, 10);
         // assert!(coin::balance<BsAptos>(source_addr) == 50, 1);
         // assert!(coin::balance<BsAptos>(destination_addr) == 10, 2);
