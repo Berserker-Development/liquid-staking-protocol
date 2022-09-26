@@ -125,24 +125,23 @@ module Staking::berserker_coin {
         coin::register<BsAptos>(destination);
 
         mint(mint_authority, source_addr, 50);
-        // mint(mint_authority, destination_addr, 10);
-        // assert!(coin::balance<BsAptos>(source_addr) == 50, 1);
-        // assert!(coin::balance<BsAptos>(destination_addr) == 10, 2);
+        mint(mint_authority, destination_addr, 10);
+        assert!(coin::balance<BsAptos>(source_addr) == 50, 1);
+        assert!(coin::balance<BsAptos>(destination_addr) == 10, 2);
 
-        // let supply = coin::supply<BsAptos>();
-        // assert!(option::is_some(&supply), 1);
-        // assert!(option::extract(&mut supply) == 60, 2);
+        let supply = coin::supply<BsAptos>();
+        assert!(option::is_some(&supply), 1);
+        assert!(option::extract(&mut supply) == 60, 2);
 
-        // coin::transfer<BsAptos>(source, destination_addr, 10);
-        // assert!(coin::balance<BsAptos>(source_addr) == 40, 3);
-        // assert!(coin::balance<BsAptos>(destination_addr) == 20, 4);
+        coin::transfer<BsAptos>(source, destination_addr, 10);
+        assert!(coin::balance<BsAptos>(source_addr) == 40, 3);
+        assert!(coin::balance<BsAptos>(destination_addr) == 20, 4);
 
-        // coin::transfer<BsAptos>(source, signer::address_of(mint_authority), 40);
-        // burn<BsAptos>(mint_authority, 40);
+        burn(mint_authority, source, 40);
 
-        // assert!(coin::balance<BsAptos>(source_addr) == 0, 1);
+        assert!(coin::balance<BsAptos>(source_addr) == 0, 1);
 
-        // let new_supply = coin::supply<BsAptos>();
-        // assert!(option::extract(&mut new_supply) == 20, 2);
+        let new_supply = coin::supply<BsAptos>();
+        assert!(option::extract(&mut new_supply) == 20, 2);
     }
 }
