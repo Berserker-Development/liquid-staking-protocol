@@ -57,21 +57,39 @@ module Staking::berserker_coin {
     }
 
     public fun mint( // TODO add direct_mint using user sign
-        account: &signer,
+        authority: &signer,
         dst_addr: address,
         amount: u64,
     ) acquires Capabilities {
         assert!(get_supply() < MAX_U64, 0);
-        let account_addr = signer::address_of(account);
+        let authority_addr = signer::address_of(authority);
 
         assert!(
-            exists<Capabilities<BsAptos>>(account_addr),
+            exists<Capabilities<BsAptos>>(authority_addr),
             error::not_found(ENO_CAPABILITIES),
         );
 
-        let capabilities = borrow_global<Capabilities<BsAptos>>(account_addr);
+        let capabilities = borrow_global<Capabilities<BsAptos>>(authority_addr);
         let coins_minted = coin::mint(amount, &capabilities.mint_cap);
         coin::deposit(dst_addr, coins_minted);
+    }
+
+    public entry fun burn(
+        authority: &signer,
+        account: &signer,
+        amount: u64,
+    ) acquires Capabilities {
+        let authority_addr = signer::address_of(authority);
+
+        assert!(
+            exists<Capabilities<BsAptos>>(authority_addr),
+            error::not_found(ENO_CAPABILITIES),
+        );
+
+        let capabilities = borrow_global<Capabilities<BsAptos>>(authority_addr);
+
+        let to_burn = coin::withdraw<BsAptos>(account, amount);
+        coin::burn(to_burn, &capabilities.burn_cap);
     }
 
     #[test(admin = @Staking, mint_authority = @Staking)]
