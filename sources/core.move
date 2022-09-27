@@ -212,31 +212,35 @@ module Staking::core {
         aptos_framework: &signer,
         aptos_amount: u64,
         bs_aptos_amount: u64
-    ) {
+    ) acquires State, Staker {
         stake::initialize_for_test(aptos_framework);
+        let admin_address = signer::address_of(admin);
 
         // increase controlled aptos
-        account::create_account_for_test(signer::address_of(admin));
+        account::create_account_for_test(admin_address);
         coin::register<AptosCoin>(admin);
         stake::mint(admin, aptos_amount);
         add_validator(admin);
         stake(admin, aptos_amount);
 
         // mint bs aptos 
-        let admin_address = signer::address_of(admin);
+        let state = borrow_global<State>(admin_address);
+        let staker = borrow_global<Staker>(state.staker_address);
+        let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
+        
         coin::register<BsAptos>(admin);
-        berserker_coin::mint(admin, admin_address, bs_aptos_amount);
+        berserker_coin::mint(&staker_signer, admin_address, bs_aptos_amount);
     }
 
     #[test(admin = @Staking, aptos_framework = @0x1)]
-    public entry fun test_calculate_bsaptos_amount_1(admin: &signer, aptos_framework: &signer) { 
+    public entry fun test_calculate_bsaptos_amount_1(admin: &signer, aptos_framework: &signer) acquires State, Staker  { 
         init(admin, true, 100);
         set_coins_amounts(admin, aptos_framework, 100, 100);
         assert!(calculate_bsaptos_amount(100) == 100, 0);
     }
 
     #[test(admin = @Staking, aptos_framework = @0x1)]
-    public entry fun test_calculate_bsaptos_amount_2(admin: &signer, aptos_framework: &signer) { 
+    public entry fun test_calculate_bsaptos_amount_2(admin: &signer, aptos_framework: &signer) acquires State, Staker { 
         init(admin, true, 100);
         set_coins_amounts(admin, aptos_framework, 1000, 2000);
         assert!(calculate_bsaptos_amount(100) == 200, 0);
@@ -244,14 +248,14 @@ module Staking::core {
     // TODO check more cases
 
     #[test(admin = @Staking, aptos_framework = @0x1)]
-    public entry fun test_calculate_aptos_amount_1(admin: &signer, aptos_framework: &signer) { 
+    public entry fun test_calculate_aptos_amount_1(admin: &signer, aptos_framework: &signer) acquires State, Staker { 
         init(admin, true, 100);
         set_coins_amounts(admin, aptos_framework, 100, 100);
         assert!(calculate_aptos_amount(100) == 100, 0);
     }
 
     #[test(admin = @Staking, aptos_framework = @0x1)]
-    public entry fun test_calculate_aptos_amount_2(admin: &signer, aptos_framework: &signer) { 
+    public entry fun test_calculate_aptos_amount_2(admin: &signer, aptos_framework: &signer) acquires State, Staker { 
         init(admin, true, 100);
         set_coins_amounts(admin, aptos_framework, 1000, 2000);
         assert!(calculate_aptos_amount(100) == 50, 0);
