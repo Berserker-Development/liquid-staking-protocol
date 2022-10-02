@@ -68,13 +68,17 @@ export const compileAndDeploy = async (account: AptosAccount, url: string = TEST
 
   // deploy
   const deploy =
-    'cd .. && aptos move publish --named-addresses ' +
-    'Staking=' +
-    keyObject.address +
-    ' --private-key ' +
-    keyObject.privateKeyHex +
-    ' --url ' +
-    url
+      'cd .. && aptos move publish --named-addresses ' +
+      'Staking=' +
+      keyObject.address +
+      ' --private-key ' +
+      keyObject.privateKeyHex +
+      ' --url ' +
+      url +
+      ' --override-size-check' +
+      ' --max-gas 1000000' +
+      ' --included-artifacts none' +
+      ' --gas-unit-price 100'
   await execShellCommand(deploy)
 }
 
