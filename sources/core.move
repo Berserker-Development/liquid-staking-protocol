@@ -3,7 +3,7 @@ module Staking::core {
     use aptos_framework::coin;
     use aptos_framework::aptos_coin::{AptosCoin};
     use aptos_framework::account;
-    use aptos_framework::signer;
+    use std::signer;
 
     use Staking::berserker_coin::{Self, initialize_bsaptos, BsAptos};
 

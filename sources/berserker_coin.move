@@ -1,6 +1,6 @@
 module Staking::berserker_coin {
     use aptos_framework::coin::{Self, BurnCapability, FreezeCapability, MintCapability, supply};
-    use aptos_framework::signer;
+    use std::signer;
     use std::option;
     use std::string;
     use std::error;
