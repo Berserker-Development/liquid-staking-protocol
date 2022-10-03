@@ -89,7 +89,6 @@ module Staking::core {
 
     ///// STAKE MANAGMENT
     public entry fun stake(account: &signer, aptos_amount: u64) {
-    // public fun stake(account: &signer, aptos_amount: u64) {
         // calc bsAptos amount
         let _bs_aptos_amount = calculate_bsaptos_amount(aptos_amount);
         // 1 form pool // TODO

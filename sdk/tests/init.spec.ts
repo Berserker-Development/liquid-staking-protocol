@@ -26,7 +26,7 @@ describe('Init staker', () => {
     ADMIN = new AptosAccount()
 
     contractAddress = ADMIN.toPrivateKeyObject().address as Address
-    faucetClient.fundAccount(ADMIN.address(), 1_000_000_000)
+    await faucetClient.fundAccount(ADMIN.address(), 1_000_000_000)
 
     await sleep(1000)
     await compileAndDeploy(ADMIN)
@@ -37,7 +37,7 @@ describe('Init staker', () => {
     const initParams: StakerParams = {
       aptosClient,
       faucetClient,
-      wallet: new TestWallet(ADMIN),
+      wallet: new TestWallet(ADMIN, aptosClient),
       contractAddress
     }
 

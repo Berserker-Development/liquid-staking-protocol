@@ -100,17 +100,15 @@ export class Staker {
     return await this.signAndSend(scriptFunctionPayload)
   }
 
-  // public async addValidator() {
-  //   const scriptFunctionPayload: TransactionPayloadEntry = await this.addValidatorPayload()
-  //   const rawTxn: RawTxn = await this.getRawTransaction(scriptFunctionPayload)
-  //   return await this.signAndSend(rawTxn)
-  // }
-  //
-  // public async join() {
-  //   const scriptFunctionPayload = await this.joinPayload()
-  //   const rawTxn: RawTxn = await this.getRawTransaction(scriptFunctionPayload)
-  //   return await this.signAndSend(rawTxn)
-  // }
+  public async addValidator() {
+    const scriptFunctionPayload: Types.TransactionPayload = await this.addValidatorPayload()
+    return await this.signAndSend(scriptFunctionPayload)
+  }
+
+  public async join() {
+    const scriptFunctionPayload = await this.joinPayload()
+    return await this.signAndSend(scriptFunctionPayload)
+  }
 
   // QUERIES
   public async getAptosCoinBalance(address: MaybeHexString): Promise<number> {
@@ -166,36 +164,29 @@ export class Staker {
   }
 
   public async stakePayload(newValue: number): Promise<Types.TransactionPayload> {
-    const entryFunctionPayload: Types.TransactionPayload_EntryFunctionPayload =  {
+    return {
       type: 'entry_function_payload',
       function: `${this.contractAddress}::core::stake`,
       type_arguments: [],
       arguments: [newValue]
     }
-
-    return entryFunctionPayload
   }
 
-  // public async stakePayload(newValue: number): Promise<TransactionPayloadEntry> {
-  //   return new TransactionPayloadEntryFunction(
-  //     EntryFunction.natural(
-  //       `${this.contractAddress}::core`,
-  //       'stake',
-  //       [],
-  //       [bcsSerializeUint64(newValue)]
-  //     )
-  //   )
-  // }
-
-  public async joinPayload(): Promise<TransactionPayloadEntry> {
-    return new TransactionPayloadEntryFunction(
-      EntryFunction.natural(`${this.contractAddress}::core`, 'join', [], [])
-    )
+  public async joinPayload(): Promise<Types.TransactionPayload> {
+    return {
+      type: 'entry_function_payload',
+      function: `${this.contractAddress}::core::join`,
+      type_arguments: [],
+      arguments: []
+    }
   }
 
-  public async addValidatorPayload(): Promise<TransactionPayloadEntry> {
-    return new TransactionPayloadEntryFunction(
-      EntryFunction.natural(`${this.contractAddress}::core`, 'add_validator', [], [])
-    )
+  public async addValidatorPayload(): Promise<Types.TransactionPayload> {
+    return {
+      type: 'entry_function_payload',
+      function: `${this.contractAddress}::core::add_validator`,
+      type_arguments: [],
+      arguments: []
+    }
   }
 }

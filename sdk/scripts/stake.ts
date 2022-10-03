@@ -13,7 +13,7 @@ const main = async () => {
   const balanceBefore = await staker.getAptosCoinBalance(admin.address())
   console.log(`balance before = ${balanceBefore}`)
 
-  let tx = await staker.stake(10_000)
+  let tx = await staker.stake(100_000)
   console.log(tx)
 
   const balanceAfter = await staker.getAptosCoinBalance(admin.address())
