@@ -1,5 +1,5 @@
-import { AptosAccount, AptosClient, BCS, FaucetClient } from 'aptos'
-import { Address, RawTransaction } from './types'
+import {AptosAccount, AptosClient, BCS, FaucetClient, Types} from 'aptos'
+import {Address} from './types'
 
 export interface AptosCoin {
   data: {
@@ -66,7 +66,6 @@ export interface AptosConfig {
 export const { bcsSerializeUint64, bcsSerializeBool } = BCS
 
 export interface IWallet {
-  signTransaction: (tx: RawTransaction) => Promise<Uint8Array>
-  signAllTransactions: (txs: RawTransaction[]) => Promise<Uint8Array[]>
+  signTransaction: (tx: Types.TransactionPayload) => Promise<Uint8Array>
   account: AptosAccount
 }

@@ -1,10 +1,11 @@
-import { AptosAccount, AptosClient, HexString } from 'aptos'
+import * as SHA3 from 'js-sha3'
+import { sha3_256 } from 'js-sha3'
+import base58 from 'bs58'
+import {AptosAccount, AptosClient, EntryFunctionPayload, HexString, Types} from 'aptos'
 import * as yaml from 'js-yaml'
 import * as path from 'path'
 import { promises as fsPromises } from 'fs'
 import { AptosConfig, IWallet } from './interfaces'
-import { sha3_256 } from 'js-sha3'
-import { RawTransaction } from './types'
 import toHex from 'to-hex'
 
 export const TESTNET_URL = 'https://fullnode.devnet.aptoslabs.com/v1'
@@ -14,23 +15,64 @@ export const VALIDATOR_PUBKEY = '7a4b42b50d724ad70e4ea56c1e4d4c5c9cc94d56ad5b169
 export const VALIDATOR_PRIVKEY =
   '0xb2e9ca5a61a842d75e29a5cb9cea053af9847f61e5abf2f4ff517d77ad066568'
 const CONFIG_PATH = '../.aptos/config.yaml'
+
 export class TestWallet implements IWallet {
   account: AptosAccount
-
-  constructor(account: AptosAccount) {
+  publicKey: AptosPublicKey
+  client: AptosClient
+  constructor(account: AptosAccount, client: AptosClient) {
     this.account = account
+    this.publicKey = new AptosPublicKey(account.pubKey().toString())
+    this.client = client
   }
-
-  signTransaction(tx: RawTransaction): Promise<Uint8Array> {
-    return Promise.resolve(AptosClient.generateBCSTransaction(this.account, tx))
-  }
-
-  signAllTransactions(txs: RawTransaction[]): Promise<Uint8Array[]> {
-    const signedTxs: Promise<Uint8Array[]> = Promise.all(
-      txs.map(async tx => AptosClient.generateBCSTransaction(this.account, tx))
+  async signTransaction(tx: Types.TransactionPayload): Promise<Uint8Array> {
+    const rawTx = await this.client.generateTransaction(
+      this.publicKey.address(),
+      tx as unknown as EntryFunctionPayload
     )
 
-    return signedTxs
+    return await this.client.signTransaction(this.account, rawTx)
+  }
+}
+
+export class AptosPublicKey {
+  private readonly hexString: string
+
+  static fromBase58(base58string: string) {
+    const bytes = Buffer.from(base58.decode(base58string))
+    const hexString = bytes.toString('hex')
+    return new AptosPublicKey(hexString)
+  }
+
+  static default() {
+    return new AptosPublicKey('0'.repeat(64))
+  }
+
+  address() {
+    const hash = SHA3.sha3_256.create()
+    hash.update(Buffer.from(this.asPureHex(), 'hex'))
+    hash.update('\x00')
+    return '0x' + hash.hex()
+  }
+
+  asUint8Array() {
+    return new Uint8Array(Buffer.from(this.asPureHex(), 'hex'))
+  }
+
+  asString() {
+    return this.hexString
+  }
+
+  asPureHex() {
+    return this.hexString.substr(2)
+  }
+
+  constructor(hexString: string) {
+    if (hexString.startsWith('0x')) {
+      this.hexString = hexString
+    } else {
+      this.hexString = `0x${hexString}`
+    }
   }
 }
 
