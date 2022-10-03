@@ -1,23 +1,23 @@
-import {AptosClient, FaucetClient} from "aptos";
-import {loadAdminFromConfig, TESTNET_URL, FAUCET_URL, TestWallet} from "../src/utils";
-import {Staker} from "../src/staker";
+import { AptosClient, FaucetClient } from 'aptos'
+import { loadAdminFromConfig, TESTNET_URL, FAUCET_URL, TestWallet } from '../src/utils'
+import { Staker } from '../src/staker'
 
 const main = async () => {
-    const aptosClient = new AptosClient(TESTNET_URL)
-    const faucetClient = new FaucetClient(TESTNET_URL, FAUCET_URL)
-    const admin = await loadAdminFromConfig()
-    const contractAddress = admin.toPrivateKeyObject().address as string
-    const wallet = new TestWallet(admin)
-    const staker = await Staker.build({ aptosClient, faucetClient, wallet, contractAddress })
+  const aptosClient = new AptosClient(TESTNET_URL)
+  const faucetClient = new FaucetClient(TESTNET_URL, FAUCET_URL)
+  const admin = await loadAdminFromConfig()
+  const contractAddress = admin.toPrivateKeyObject().address as string
+  const wallet = new TestWallet(admin, aptosClient)
+  const staker = await Staker.build({ aptosClient, faucetClient, wallet, contractAddress })
 
-    const balanceBefore = await staker.getAptosCoinBalance(admin.address())
-    console.log(`balance before = ${balanceBefore}`)
+  const balanceBefore = await staker.getAptosCoinBalance(admin.address())
+  console.log(`balance before = ${balanceBefore}`)
 
-    let tx = await staker.stake(1000);
-    console.log(tx)
+  let tx = await staker.stake(100_000)
+  console.log(tx)
 
-    const balanceAfter = await staker.getAptosCoinBalance(admin.address())
-    console.log(`balance before = ${balanceAfter}`)
+  const balanceAfter = await staker.getAptosCoinBalance(admin.address())
+  console.log(`balance before = ${balanceAfter}`)
 }
 
 main()
