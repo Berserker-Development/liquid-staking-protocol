@@ -61,7 +61,7 @@ module Staking::core {
     }
 
     ///// VALIDATOR MANAGMENT
-    entry fun add_validator(validator: &signer) {
+    public entry fun add_validator(validator: &signer) {
         initialize_validator(
             validator, CONSENSUS_PUBKEY, PROOF_OF_POSSESSTION, NETWORK_ADDRESSESS, FULLNODE_ADDRESSES
         );
@@ -82,13 +82,14 @@ module Staking::core {
         set_operator(&staker_signer, ADMIN_ADDRESS);
     }
 
-    entry fun join(validator: &signer) {
+    public entry fun join(validator: &signer) {
         let validator_address = signer::address_of(validator);
         join_validator_set(validator, validator_address);
     }
 
     ///// STAKE MANAGMENT
-    entry fun stake(account: &signer, aptos_amount: u64) {
+    public entry fun stake(account: &signer, aptos_amount: u64) {
+    // public fun stake(account: &signer, aptos_amount: u64) {
         // calc bsAptos amount
         let _bs_aptos_amount = calculate_bsaptos_amount(aptos_amount);
         // 1 form pool // TODO
