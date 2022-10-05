@@ -134,7 +134,7 @@ export class Staker {
     ).data as any
 
     return {
-      fee: Number(data.fee),
+      fee: Number(data.protocol_fee),
       stakerSignerCap: data.staker_signer_cap
     }
   }

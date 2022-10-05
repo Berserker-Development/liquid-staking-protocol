@@ -31,7 +31,7 @@ module Staking::core {
     }
 
     /// INIT
-    entry fun init(admin: &signer, monitor_supply: bool, protocol_fee: u64) {
+    public entry fun init(admin: &signer, monitor_supply: bool, protocol_fee: u64) {
         assert!(!exists<State>(signer::address_of(admin)), STATE_ALREADY_INITIALIZED);
         assert!(!berserker_coin::is_initialized(), COIN_ALREADY_INITIALIZED);
 
@@ -67,13 +67,13 @@ module Staking::core {
         );
     }
 
-    entry fun set_operator_to_resource_account(admin: &signer) acquires State {
+    public entry fun set_operator_to_resource_account(admin: &signer) acquires State {
         let state = borrow_global<State>(ADMIN_ADDRESS);
         assert!(signer::address_of(admin) != state.staker_address, INVALID_ADDRESS);
         set_operator(admin, state.staker_address);
     }
 
-    entry fun set_operator_to_admin(admin: &signer) acquires State, Staker {
+    public entry fun set_operator_to_admin(admin: &signer) acquires State, Staker {
         assert!(signer::address_of(admin) == ADMIN_ADDRESS, INVALID_ADDRESS);
         let state = borrow_global<State>(ADMIN_ADDRESS);
         let staker = borrow_global<Staker>(state.staker_address);
@@ -111,7 +111,7 @@ module Staking::core {
     }
     // TODO request unstake
     // TODO claim aptos after end of lockup 
-    entry fun unstake(account: &signer, amount: u64) {
+    public entry fun unstake(account: &signer, amount: u64) {
         unlock(account, amount);
     }
 
