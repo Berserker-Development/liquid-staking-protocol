@@ -1,5 +1,5 @@
 module Staking::core {
-    use aptos_framework::stake::{add_stake, get_stake, initialize_validator, join_validator_set, unlock, set_operator};
+    use aptos_framework::stake::{ initialize_validator, join_validator_set, unlock, set_operator};
     use aptos_framework::coin;
     use aptos_framework::aptos_coin::{AptosCoin};
     use aptos_framework::account;
@@ -20,6 +20,7 @@ module Staking::core {
     const COIN_ALREADY_INITIALIZED: u64 = 1;
     const DIVISION_BY_ZERO: u64 = 2;
     const INVALID_ADDRESS: u64 = 3;
+    const INSUFFICIENT_AMOUNT: u64 = 4;
 
     struct State has key {
         staker_address: address
@@ -61,16 +62,27 @@ module Staking::core {
     }
 
     ///// VALIDATOR MANAGMENT
-    public entry fun add_validator(validator: &signer) {
+    public entry fun add_validator(validator: &signer){
+        // let state = borrow_global<State>(ADMIN_ADDRESS);
+        // let staker = borrow_global<Staker>(state.staker_address);
+        // let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
+
         initialize_validator(
             validator, CONSENSUS_PUBKEY, PROOF_OF_POSSESSTION, NETWORK_ADDRESSESS, FULLNODE_ADDRESSES
         );
     }
 
-    public entry fun set_operator_to_resource_account(admin: &signer) acquires State {
+    // public entry fun initaial_stake(validator: &signer, amount: u64) acquires State{
+    //     let (min_stake, _) = staking_config::get_required_stake(&staking_config::get());
+    //     assert!(amount >= min_stake, error::invalid_argument(INSUFFICIENT_AMOUNT));
+    // }
+
+
+    public entry fun set_operator_to_resource_account(validator: &signer) acquires State {
         let state = borrow_global<State>(ADMIN_ADDRESS);
-        assert!(signer::address_of(admin) != state.staker_address, INVALID_ADDRESS);
-        set_operator(admin, state.staker_address);
+        assert!(signer::address_of(validator) != state.staker_address, INVALID_ADDRESS);
+        set_operator(validator, state.staker_address);
+        
     }
 
     public entry fun set_operator_to_admin(admin: &signer) acquires State, Staker {
@@ -88,27 +100,34 @@ module Staking::core {
     }
 
     ///// STAKE MANAGMENT
-    public entry fun stake(account: &signer, aptos_amount: u64) {
+    public entry fun stake(account: &signer, aptos_amount: u64) acquires Staker, State {
+        // check aptos balance
+
         // calc bsAptos amount
-        // let _bs_aptos_amount = calculate_bsaptos_amount(aptos_amount);
+        let bs_aptos_amount = calculate_bsaptos_amount(aptos_amount);
         // 1 form pool // TODO
         //let from_pool = 0; //mocked
         // // 2 from mint
 
         //let _bs_aptos_amount = bs_aptos_amount - from_pool;
-        // check mint cap
-        // berserker_coin::mint(account, bs_aptos_amount);
 
-
-        //transfer aptos to vault 
-
-        //register acc to bAptos
         
-        //mint bsAptos
-        //mint()
 
-        add_stake(account, aptos_amount);
+
+
+        // get staker signer
+        let state = borrow_global<State>(ADMIN_ADDRESS);
+        let staker = borrow_global<Staker>(state.staker_address);
+        let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
+
+        coin::transfer<AptosCoin>(account, state.staker_address, aptos_amount);
+        //stake::add_stake(&staker_signer, aptos_amount);
+
+
+        coin::register<BsAptos>(account);
+        berserker_coin::mint(&staker_signer, signer::address_of(account), bs_aptos_amount);
     }
+    
     // TODO request unstake
     // TODO claim aptos after end of lockup 
     public entry fun unstake(account: &signer, amount: u64) {
@@ -122,8 +141,7 @@ module Staking::core {
 
 
     public fun get_all_aptos_under_control(): u64 {
-
-        let (active, inactive, pending_active, pending_inactive) = get_stake(ADMIN_ADDRESS);
+        let (active, inactive, pending_active, pending_inactive) = stake::get_stake(ADMIN_ADDRESS);
         return active + inactive + pending_active + pending_inactive
     }
 
@@ -190,97 +208,100 @@ module Staking::core {
     #[test_only]
     use aptos_framework::stake;
 
-    #[test(admin = @Staking, aptos_framework = @0x1)]
-    public entry fun test_get_all_aptos_under_control(admin: &signer, aptos_framework: &signer) {   
+    #[test(admin = @Staking, aptos_framework = @0x1, user = @0xa11ce)]
+    public entry fun test_get_all_aptos_under_control(admin: &signer, user: &signer, aptos_framework: &signer){   
         stake::initialize_for_test(aptos_framework);
         let protocol_fee = 1000;
         init(admin, true, protocol_fee);
 
         account::create_account_for_test(signer::address_of(admin));
+        account::create_account_for_test(signer::address_of(user));
         coin::register<AptosCoin>(admin);
+        coin::register<AptosCoin>(user);
 
         stake::mint(admin, 1000);
+        stake::mint(user, 1000);
         add_validator(admin);
         assert!(get_all_aptos_under_control() == 0, 0);
-        stake(admin, 100);
-        assert!(get_all_aptos_under_control() == 100, 0);
+        // stake(user, 100);
+        // assert!(get_all_aptos_under_control() == 100, 0); // TODO 
     }
     
-    #[test_only]
-    public entry fun set_coins_amounts(
-        admin: &signer,
-        aptos_framework: &signer,
-        aptos_amount: u64,
-        bs_aptos_amount: u64
-    ) acquires State, Staker {
-        stake::initialize_for_test(aptos_framework);
-        let admin_address = signer::address_of(admin);
+    // #[test_only]
+    // public entry fun set_coins_amounts(
+    //     admin: &signer,
+    //     aptos_framework: &signer,
+    //     aptos_amount: u64,
+    //     bs_aptos_amount: u64
+    // ) acquires State, Staker {
+    //     stake::initialize_for_test(aptos_framework);
+    //     let admin_address = signer::address_of(admin);
 
-        // increase controlled aptos
-        account::create_account_for_test(admin_address);
-        coin::register<AptosCoin>(admin);
-        stake::mint(admin, aptos_amount);
-        add_validator(admin);
-        stake(admin, aptos_amount);
+    //     // increase controlled aptos
+    //     account::create_account_for_test(admin_address);
+    //     coin::register<AptosCoin>(admin);
+    //     stake::mint(admin, aptos_amount);
+    //     add_validator(admin);
+    //     stake(admin, aptos_amount);
 
-        // mint bs aptos 
-        let state = borrow_global<State>(admin_address);
-        let staker = borrow_global<Staker>(state.staker_address);
-        let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
+    //     // mint bs aptos 
+    //     let state = borrow_global<State>(admin_address);
+    //     let staker = borrow_global<Staker>(state.staker_address);
+    //     let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
         
-        coin::register<BsAptos>(admin);
-        berserker_coin::mint(&staker_signer, admin_address, bs_aptos_amount);
-    }
+    //     coin::register<BsAptos>(admin);
+    //     berserker_coin::mint(&staker_signer, admin_address, bs_aptos_amount);
+    // }
 
-    #[test(admin = @Staking, aptos_framework = @0x1)]
-    public entry fun test_calculate_bsaptos_amount_1(admin: &signer, aptos_framework: &signer) acquires State, Staker  { 
-        init(admin, true, 100);
-        set_coins_amounts(admin, aptos_framework, 100, 100);
-        assert!(calculate_bsaptos_amount(100) == 100, 0);
-    }
+    // #[test(admin = @Staking, aptos_framework = @0x1)]
+    // public entry fun test_calculate_bsaptos_amount_1(admin: &signer, aptos_framework: &signer) acquires State, Staker  { 
+    //     init(admin, true, 100);
+    //     set_coins_amounts(admin, aptos_framework, 100, 100);
+    //     assert!(calculate_bsaptos_amount(100) == 100, 0);
+    // }
 
-    #[test(admin = @Staking, aptos_framework = @0x1)]
-    public entry fun test_calculate_bsaptos_amount_2(admin: &signer, aptos_framework: &signer) acquires State, Staker { 
-        init(admin, true, 100);
-        set_coins_amounts(admin, aptos_framework, 1000, 2000);
-        assert!(calculate_bsaptos_amount(100) == 200, 0);
-    }
-    // TODO check more cases
+    // #[test(admin = @Staking, aptos_framework = @0x1)]
+    // public entry fun test_calculate_bsaptos_amount_2(admin: &signer, aptos_framework: &signer) acquires State, Staker { 
+    //     init(admin, true, 100);
+    //     set_coins_amounts(admin, aptos_framework, 1000, 2000);
+    //     assert!(calculate_bsaptos_amount(100) == 200, 0);
+    // }
+    // // TODO check more cases
 
-    #[test(admin = @Staking, aptos_framework = @0x1)]
-    public entry fun test_calculate_aptos_amount_1(admin: &signer, aptos_framework: &signer) acquires State, Staker { 
-        init(admin, true, 100);
-        set_coins_amounts(admin, aptos_framework, 100, 100);
-        assert!(calculate_aptos_amount(100) == 100, 0);
-    }
+    // #[test(admin = @Staking, aptos_framework = @0x1)]
+    // public entry fun test_calculate_aptos_amount_1(admin: &signer, aptos_framework: &signer) acquires State, Staker { 
+    //     init(admin, true, 100);
+    //     set_coins_amounts(admin, aptos_framework, 100, 100);
+    //     assert!(calculate_aptos_amount(100) == 100, 0);
+    // }
 
-    #[test(admin = @Staking, aptos_framework = @0x1)]
-    public entry fun test_calculate_aptos_amount_2(admin: &signer, aptos_framework: &signer) acquires State, Staker { 
-        init(admin, true, 100);
-        set_coins_amounts(admin, aptos_framework, 1000, 2000);
-        assert!(calculate_aptos_amount(100) == 50, 0);
-    }
-    // TODO check more cases
+    // #[test(admin = @Staking, aptos_framework = @0x1)]
+    // public entry fun test_calculate_aptos_amount_2(admin: &signer, aptos_framework: &signer) acquires State, Staker { 
+    //     init(admin, true, 100);
+    //     set_coins_amounts(admin, aptos_framework, 1000, 2000);
+    //     assert!(calculate_aptos_amount(100) == 50, 0);
+    // }
+    // // TODO check more cases
 
-    #[test]
-    public entry fun test_calculate_proportion() {
+    // #[test]
+    // public entry fun test_calculate_proportion() {
 
-        // sahres           1
-        // total value      1 
-        // total shares     1
-        // result
-        // real 1 expected  1
+    //     // sahres           1
+    //     // total value      1 
+    //     // total shares     1
+    //     // result
+    //     // real 1 expected  1
     
-        assert!(calculate_proportion(1,1,1) == 1, 0);
+    //     assert!(calculate_proportion(1,1,1) == 1, 0);
 
-        // sahres           100
-        // total value      1000
-        // total shares     1100
-        // result
-        // real 90,909090 expected 90
+    //     // sahres           100
+    //     // total value      1000
+    //     // total shares     1100
+    //     // result
+    //     // real 90,909090 expected 90
     
-        assert!(calculate_proportion(100,1000,1100) == 90, 0);
+    //     assert!(calculate_proportion(100,1000,1100) == 90, 0);
 
-        // TODO check more cases
-    }
+    //     // TODO check more cases
+    // }
 }
