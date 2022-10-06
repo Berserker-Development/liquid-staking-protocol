@@ -1,7 +1,12 @@
-import {AptosAccount, AptosClient, BCS, FaucetClient, Types} from 'aptos'
-import {Address} from './types'
+import { AptosAccount, AptosClient, BCS, FaucetClient, Types } from 'aptos'
+import { Address } from './types'
 
 export interface AptosCoin {
+  data: {
+    coin: { value: string }
+  }
+}
+export interface BsAptosCoin {
   data: {
     coin: { value: string }
   }
@@ -17,12 +22,12 @@ export interface SignerCapability {
 }
 
 export interface StakingConfig {
-  allow_validator_set_change: boolean,
-  maximum_stake: string,
-  minimum_stake: string,
-  recurring_lockup_duration_secs: string,
-  rewards_rate: string,
-  rewards_rate_denominator: string,
+  allow_validator_set_change: boolean
+  maximum_stake: string
+  minimum_stake: string
+  recurring_lockup_duration_secs: string
+  rewards_rate: string
+  rewards_rate_denominator: string
   voting_power_increase_limit: string
 }
 
