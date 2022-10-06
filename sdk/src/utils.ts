@@ -1,7 +1,7 @@
 import * as SHA3 from 'js-sha3'
 import { sha3_256 } from 'js-sha3'
 import base58 from 'bs58'
-import {AptosAccount, AptosClient, EntryFunctionPayload, HexString, Types} from 'aptos'
+import { AptosAccount, AptosClient, HexString, Types } from 'aptos'
 import * as yaml from 'js-yaml'
 import * as path from 'path'
 import { promises as fsPromises } from 'fs'
@@ -28,9 +28,8 @@ export class TestWallet implements IWallet {
   async signTransaction(tx: Types.TransactionPayload): Promise<Uint8Array> {
     const rawTx = await this.client.generateTransaction(
       this.publicKey.address(),
-      tx as unknown as EntryFunctionPayload
+      tx as Types.EntryFunctionPayload
     )
-
     return await this.client.signTransaction(this.account, rawTx)
   }
 }
@@ -110,17 +109,17 @@ export const compileAndDeploy = async (account: AptosAccount, url: string = TEST
 
   // deploy
   const deploy =
-      'cd .. && aptos move publish --named-addresses ' +
-      'Staking=' +
-      keyObject.address +
-      ' --private-key ' +
-      keyObject.privateKeyHex +
-      ' --url ' +
-      url +
-      ' --override-size-check' +
-      ' --max-gas 1000000' +
-      ' --included-artifacts none' +
-      ' --gas-unit-price 100'
+    'cd .. && aptos move publish --named-addresses ' +
+    'Staking=' +
+    keyObject.address +
+    ' --private-key ' +
+    keyObject.privateKeyHex +
+    ' --url ' +
+    url +
+    ' --override-size-check' +
+    ' --max-gas 1000000' +
+    ' --included-artifacts none' +
+    ' --gas-unit-price 100'
   await execShellCommand(deploy)
 }
 

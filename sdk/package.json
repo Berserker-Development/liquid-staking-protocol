@@ -8,6 +8,7 @@
   "scripts": {
     "test": "mocha -r  ts-node/register tests/*.spec.ts --timeout 20000",
     "test:init": "mocha -r  ts-node/register tests/init.spec.ts --timeout 40000",
+    "test:stake": "mocha -r  ts-node/register tests/stake.spec.ts --timeout 40000",
     "publish": "ts-node scripts/publish.ts",
     "compile": "ts-node scripts/compile.ts",
     "unit-test": "ts-node scripts/unit-tests.ts",
