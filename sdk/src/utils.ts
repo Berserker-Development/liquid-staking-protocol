@@ -28,9 +28,8 @@ export class TestWallet implements IWallet {
   async signTransaction(tx: Types.TransactionPayload): Promise<Uint8Array> {
     const rawTx = await this.client.generateTransaction(
       this.publicKey.address(),
-      tx as unknown as Types.EntryFunctionPayload
+      tx as Types.EntryFunctionPayload
     )
-
     return await this.client.signTransaction(this.account, rawTx)
   }
 }
