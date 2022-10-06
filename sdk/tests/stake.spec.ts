@@ -83,4 +83,20 @@ describe('Init staker', () => {
     assert(aptosBalanceBefore - aptosBalanceAfter - txCost === stakeAmount)
     assert(bsAptosBalanceAfter === stakeAmount) // in this case aptos to bsAptos price is 1
   })
+  it('unstake', async () => {
+    const txCost = 47_000
+    const aptosBalanceBefore = await staker.getAptosCoinBalance(user.address())
+    const bsAptosBalanceBefore = await staker.getBsAptosCoinBalance(user.address())
+    console.log(bsAptosBalanceBefore)
+    const stakeAmount: number = 10_000
+    const hashIx = await staker.unstake(stakeAmount)
+    console.log('\x1b[33m Tx hash ', hashIx)
+
+    const aptosBalanceAfter = await staker.getAptosCoinBalance(user.address())
+    const bsAptosBalanceAfter = await staker.getBsAptosCoinBalance(user.address())
+    console.log(bsAptosBalanceAfter)
+    // assert(bsAptosBalanceBefore === 10000)
+    // // assert(aptosBalanceBefore - aptosBalanceAfter - txCost === stakeAmount)
+    // assert(bsAptosBalanceAfter === 0)
+  })
 })

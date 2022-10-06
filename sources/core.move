@@ -1,5 +1,5 @@
 module Staking::core {
-    use aptos_framework::stake::{Self, initialize_validator, join_validator_set, unlock, set_operator};
+    use aptos_framework::stake::{Self, initialize_validator, join_validator_set, set_operator};
     use aptos_framework::coin;
     use aptos_framework::aptos_coin::{AptosCoin};
     use aptos_framework::account;
@@ -110,7 +110,7 @@ module Staking::core {
         // // 2 from mint
 
         //let _bs_aptos_amount = bs_aptos_amount - from_pool;
-
+        
         
 
 
@@ -127,11 +127,24 @@ module Staking::core {
         coin::register<BsAptos>(account);
         berserker_coin::mint(&staker_signer, signer::address_of(account), bs_aptos_amount);
     }
-    
+
     // TODO request unstake
     // TODO claim aptos after end of lockup 
-    public entry fun unstake(account: &signer, amount: u64) {
-        unlock(account, amount);
+    public entry fun unstake(account: &signer, bs_aptos_amount: u64) acquires Staker, State {
+        
+        // that has to be done before burn
+        let aptos_amount = calculate_aptos_amount(bs_aptos_amount);
+
+        // get staker signer
+        let state = borrow_global<State>(ADMIN_ADDRESS);
+        let staker = borrow_global<Staker>(state.staker_address);
+        let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
+
+        berserker_coin::burn(&staker_signer, account, bs_aptos_amount);
+
+        coin::transfer<AptosCoin>(&staker_signer, signer::address_of(account), aptos_amount);
+        //unlock(account, amount);
+
     }
 
     // unstake request 
@@ -204,9 +217,6 @@ module Staking::core {
         assert!(is_account_registered<AptosCoin>(state.staker_address), 0);
         assert!(is_account_registered<BsAptos>(state.staker_address), 0);
     }
-
-    #[test_only]
-    use aptos_framework::stake;
 
     #[test(admin = @Staking, aptos_framework = @0x1, user = @0xa11ce)]
     public entry fun test_get_all_aptos_under_control(admin: &signer, user: &signer, aptos_framework: &signer){   
