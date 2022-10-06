@@ -120,6 +120,16 @@ export class Staker {
     return Number.parseInt(balance)
   }
 
+  public async getBsAptosCoinBalance(address: MaybeHexString): Promise<number> {
+    const bsAptos = `${this.contractAddress}::berserker_coin::BsAptos`
+    const testCoinStore = (await this.aptosClient.getAccountResource(
+      address,
+      `0x1::coin::CoinStore<${bsAptos}>`
+    )) as any as AptosCoin
+    const balance: string = testCoinStore.data.coin.value
+    return Number.parseInt(balance)
+  }
+
   public async getValidatorSet(): Promise<ValidatorSet> {
     return (await this.aptosClient.getAccountResource('0x1', `0x1::stake::ValidatorSet`))
       .data as ValidatorSet
