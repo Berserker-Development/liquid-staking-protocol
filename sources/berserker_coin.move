@@ -1,5 +1,5 @@
 module Staking::berserker_coin {
-    use aptos_framework::coin::{Self, BurnCapability, FreezeCapability, MintCapability, supply};
+    use aptos_framework::coin::{Self, BurnCapability, FreezeCapability, MintCapability};
     use std::signer;
     use std::option;
     use std::string;
@@ -48,7 +48,7 @@ module Staking::berserker_coin {
     }
 
     public fun get_supply(): u64 {
-        let supply = &supply<BsAptos>();
+        let supply = &coin::supply<BsAptos>();
         if (option::is_some(supply)) {
             (*option::borrow(supply) as u64)
         } else {

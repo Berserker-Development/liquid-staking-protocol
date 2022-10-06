@@ -130,10 +130,10 @@ module Staking::core {
 
     // TODO request unstake
     // TODO claim aptos after end of lockup 
-    public entry fun unstake(account: &signer, bs_aptos_amount: u64) acquires Staker, State {
+    public entry fun unstake(account: &signer, bs_aptos_amount: u64) acquires Staker, State  {
         
         // that has to be done before burn
-        let aptos_amount = calculate_aptos_amount(bs_aptos_amount);
+        let aptos_amount = bs_aptos_amount; // TODO IMPORTANT use this calculate_aptos_amount(bs_aptos_amount); instead of input !!!!
 
         // get staker signer
         let state = borrow_global<State>(ADMIN_ADDRESS);
