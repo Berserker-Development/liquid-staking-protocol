@@ -1,5 +1,5 @@
 module Staking::core {
-    use aptos_framework::stake::{ initialize_validator, join_validator_set, unlock, set_operator};
+    use aptos_framework::stake::{Self, initialize_validator, join_validator_set, unlock, set_operator};
     use aptos_framework::coin;
     use aptos_framework::aptos_coin::{AptosCoin};
     use aptos_framework::account;
