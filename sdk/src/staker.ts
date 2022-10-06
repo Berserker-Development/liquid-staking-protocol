@@ -100,6 +100,11 @@ export class Staker {
     return await this.signAndSend(scriptFunctionPayload)
   }
 
+  public async unstake(amount: number) {
+    const scriptFunctionPayload: Types.TransactionPayload = await this.unstakePayload(amount)
+    return await this.signAndSend(scriptFunctionPayload)
+  }
+
   public async addValidator() {
     const scriptFunctionPayload: Types.TransactionPayload = await this.addValidatorPayload()
     return await this.signAndSend(scriptFunctionPayload)
@@ -177,6 +182,15 @@ export class Staker {
     return {
       type: 'entry_function_payload',
       function: `${this.contractAddress}::core::stake`,
+      type_arguments: [],
+      arguments: [newValue]
+    }
+  }
+
+  public async unstakePayload(newValue: number): Promise<Types.TransactionPayload> {
+    return {
+      type: 'entry_function_payload',
+      function: `${this.contractAddress}::core::unstake`,
       type_arguments: [],
       arguments: [newValue]
     }
