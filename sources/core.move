@@ -3,6 +3,7 @@ module Staking::core {
     use aptos_framework::coin;
     use aptos_framework::aptos_coin::{AptosCoin};
     use aptos_framework::account;
+    use aptos_framework::reconfiguration;
 
     use std::signer;
 
@@ -24,15 +25,21 @@ module Staking::core {
     const DIVISION_BY_ZERO: u64 = 2;
     const INVALID_ADDRESS: u64 = 3;
     const INSUFFICIENT_AMOUNT: u64 = 4;
+    const TOO_EARLY_FOR_CLAIM: u64 = 5;
 
     struct State has key {
         staker_address: address
     }
 
+    struct Claim has store, drop {
+        aptos_amount: u64,
+        epoch_index: u64
+    }
+
     struct Staker has key {
         protocol_fee: u64,
         staker_signer_cap: account::SignerCapability,
-        pending_claims: SimpleMap<address, u64>,
+        pending_claims: SimpleMap<address, Claim>,
         claims_accumulator: u64,
     }
 
@@ -53,7 +60,7 @@ module Staking::core {
         move_to<Staker>(&staker_signer, Staker {
             protocol_fee,
             staker_signer_cap,
-            pending_claims: simple_map::create<address, u64>(),
+            pending_claims: simple_map::create<address, Claim>(),
             claims_accumulator: 0u64
         });
 
@@ -151,8 +158,16 @@ module Staking::core {
 
         berserker_coin::burn(&staker_signer, user, bs_aptos_amount);
         
+        let current_epoch_index = reconfiguration::current_epoch();
         // start tracking claim
-        simple_map::add(&mut staker.pending_claims, signer::address_of(user), aptos_amount);
+        simple_map::add(
+            &mut staker.pending_claims, 
+            signer::address_of(user), 
+            Claim{
+                aptos_amount, 
+                epoch_index: current_epoch_index
+            }
+        );
 
         // update cliam accumulator
         staker.claims_accumulator = staker.claims_accumulator + aptos_amount;
@@ -168,14 +183,19 @@ module Staking::core {
         let staker = borrow_global_mut<Staker>(state.staker_address);
         let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
 
-        let claim_amount = *simple_map::borrow(&staker.pending_claims, &user_address);
+        // get current epoch 
+        let current_epoch_index = reconfiguration::current_epoch();
+        let claim = simple_map::borrow(&staker.pending_claims, &user_address);
+        
+        assert!(claim.epoch_index > current_epoch_index, TOO_EARLY_FOR_CLAIM);
+        let aptos_amount = claim.aptos_amount;
 
         // update cliam accumulator
-        staker.claims_accumulator = staker.claims_accumulator - claim_amount;
+        staker.claims_accumulator = staker.claims_accumulator - aptos_amount;
 
         // withdraw and return aptos to user
-        stake::withdraw(&staker_signer, claim_amount);
-        coin::transfer<AptosCoin>(&staker_signer, user_address, claim_amount);
+        stake::withdraw(&staker_signer, aptos_amount);
+        coin::transfer<AptosCoin>(&staker_signer, user_address, aptos_amount);
 
         // stop tracking claim
         simple_map::remove(&mut staker.pending_claims, &user_address);
@@ -215,7 +235,7 @@ module Staking::core {
         // calculate aptos coin amount based on berserker coin amount
         // aptos = bs_aptos_amount * controlled_aptos /  bs_aptos_supply same as 
         // value  = shares * share_price where share_price=controlled_aptos/bs_aptos_supply
-        
+
         calculate_proportion(
             bs_aptos_amount,
             get_all_aptos_under_control(),
@@ -373,4 +393,6 @@ module Staking::core {
 
         // TODO check more cases
     }
+
+    // TODO add test cases with claims 
 }
