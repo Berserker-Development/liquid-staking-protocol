@@ -190,7 +190,8 @@ module Staking::core {
         let staker = borrow_global<Staker>(state.staker_address);
         let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
         let (active, inactive, pending_active, pending_inactive) = stake::get_stake(signer::address_of(&staker_signer));
-        return active + inactive + pending_active + pending_inactive
+        // contorlled aptos - claims accumulator
+        return active + inactive + pending_active + pending_inactive - staker.claims_accumulator
     }
 
     ////// MATH
