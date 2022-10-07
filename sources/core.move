@@ -32,7 +32,8 @@ module Staking::core {
     struct Staker has key {
         protocol_fee: u64,
         staker_signer_cap: account::SignerCapability,
-        pending_calims: SimpleMap<address, u64>,
+        pending_claims: SimpleMap<address, u64>,
+        claims_accumulator: u64,
     }
 
     /// INIT
@@ -52,7 +53,8 @@ module Staking::core {
         move_to<Staker>(&staker_signer, Staker {
             protocol_fee,
             staker_signer_cap,
-            pending_calims: simple_map::create<address, u64>()
+            pending_claims: simple_map::create<address, u64>(),
+            claims_accumulator: 0u64
         });
 
 
@@ -116,15 +118,12 @@ module Staking::core {
         // calc bsAptos amount
         let bs_aptos_amount = calculate_bsaptos_amount(aptos_amount);
         // 1 form pool // TODO
-        //let from_pool = 0; //mocked
-        // // 2 from mint
+        let from_pool = 0; //mocked
 
-        //let _bs_aptos_amount = bs_aptos_amount - from_pool;
+        // 2 from mint
+
+        let _bs_aptos_amount = bs_aptos_amount - from_pool;
         
-        
-
-
-
         // get staker signer
         let state = borrow_global<State>(ADMIN_ADDRESS);
         let staker = borrow_global<Staker>(state.staker_address);
@@ -144,7 +143,7 @@ module Staking::core {
     public entry fun unstake(account: &signer, bs_aptos_amount: u64) acquires Staker, State  {
         
         // that has to be done before burn
-        let aptos_amount = bs_aptos_amount; // TODO IMPORTANT use this calculate_aptos_amount(bs_aptos_amount); instead of input !!!!
+        let aptos_amount = calculate_aptos_amount(bs_aptos_amount);
 
         // get staker signer
         let state = borrow_global<State>(ADMIN_ADDRESS);
@@ -152,32 +151,35 @@ module Staking::core {
         let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
 
         berserker_coin::burn(&staker_signer, account, bs_aptos_amount);
+        
+        // start tracking claim
+        simple_map::add(staker_signer.pending_claims, signer::address_of(account), aptos_amount);
 
-        // TODO add claim tracking
-        coin::transfer<AptosCoin>(&staker_signer, signer::address_of(account), aptos_amount);
+        // update cliam accumulator
+        staker_signer.claims_accumulator = staker_signer.claims_accumulator + aptos_amount;
         stake::unlock(&staker_signer, aptos_amount);
 
     }
 
-    // unstake request 
-
     // calim
     public entry fun claim(account: &signer, bs_aptos_amount: u64) acquires Staker, State  {
-        
-        // that has to be done before burn
-        let aptos_amount = bs_aptos_amount; // TODO IMPORTANT use this calculate_aptos_amount(bs_aptos_amount); instead of input !!!!
 
         // get staker signer
         let state = borrow_global<State>(ADMIN_ADDRESS);
         let staker = borrow_global<Staker>(state.staker_address);
         let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
 
-        berserker_coin::burn(&staker_signer, account, bs_aptos_amount);
+        let claim_amount = simple_map::borrow(staker_signer.pending_inactive, signer::address_of(account))
 
-        // TODO add claim tracking
+        // update cliam accumulator
+        staker_signer.claims_accumulator = staker_signer.claims_accumulator - claim_amount;
+
+        // withdraw and return aptos to user
+        stake::withdraw(&staker_signer, claim_amount)
         coin::transfer<AptosCoin>(&staker_signer, signer::address_of(account), aptos_amount);
-        stake::unlock(&staker_signer, aptos_amount);
-
+        
+        // stop tracking claim
+        simple_map::remove(staking_contracts, &old_operator);
     }
 
 
