@@ -3,7 +3,10 @@ module Staking::core {
     use aptos_framework::coin;
     use aptos_framework::aptos_coin::{AptosCoin};
     use aptos_framework::account;
+
     use std::signer;
+
+    use aptos_std::simple_map::{Self, SimpleMap};
 
     use Staking::berserker_coin::{Self, initialize_bsaptos, BsAptos};
 
@@ -28,7 +31,8 @@ module Staking::core {
 
     struct Staker has key {
         protocol_fee: u64,
-        staker_signer_cap: account::SignerCapability
+        staker_signer_cap: account::SignerCapability,
+        pending_calims: SimpleMap<address, u64>,
     }
 
     /// INIT
@@ -47,7 +51,8 @@ module Staking::core {
         // init staker resource
         move_to<Staker>(&staker_signer, Staker {
             protocol_fee,
-            staker_signer_cap
+            staker_signer_cap,
+            pending_calims: simple_map::create<address, u64>()
         });
 
 
@@ -136,7 +141,6 @@ module Staking::core {
     }
 
     // TODO request unstake
-    // TODO claim aptos after end of lockup 
     public entry fun unstake(account: &signer, bs_aptos_amount: u64) acquires Staker, State  {
         
         // that has to be done before burn
@@ -149,7 +153,7 @@ module Staking::core {
 
         berserker_coin::burn(&staker_signer, account, bs_aptos_amount);
 
-        // TODO add calim tracking
+        // TODO add claim tracking
         coin::transfer<AptosCoin>(&staker_signer, signer::address_of(account), aptos_amount);
         stake::unlock(&staker_signer, aptos_amount);
 
@@ -158,6 +162,23 @@ module Staking::core {
     // unstake request 
 
     // calim
+    public entry fun claim(account: &signer, bs_aptos_amount: u64) acquires Staker, State  {
+        
+        // that has to be done before burn
+        let aptos_amount = bs_aptos_amount; // TODO IMPORTANT use this calculate_aptos_amount(bs_aptos_amount); instead of input !!!!
+
+        // get staker signer
+        let state = borrow_global<State>(ADMIN_ADDRESS);
+        let staker = borrow_global<Staker>(state.staker_address);
+        let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
+
+        berserker_coin::burn(&staker_signer, account, bs_aptos_amount);
+
+        // TODO add claim tracking
+        coin::transfer<AptosCoin>(&staker_signer, signer::address_of(account), aptos_amount);
+        stake::unlock(&staker_signer, aptos_amount);
+
+    }
 
 
 
@@ -227,6 +248,30 @@ module Staking::core {
         assert!(staker.protocol_fee == 1000, 0);
         assert!(is_account_registered<AptosCoin>(state.staker_address), 0);
         assert!(is_account_registered<BsAptos>(state.staker_address), 0);
+    }
+
+    #[test(admin = @Staking, aptos_framework = @0x1, user = @0xa11ce)]
+    public entry fun test_add_validator_and_join(admin: &signer, user: &signer, aptos_framework: &signer) acquires State, Staker {   
+        stake::initialize_for_test(aptos_framework);
+        let protocol_fee = 1000;
+
+
+        init(admin, true, protocol_fee);
+
+        let state = borrow_global<State>(ADMIN_ADDRESS);
+        let staker = borrow_global<Staker>(state.staker_address);
+        let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
+
+        account::create_account_for_test(signer::address_of(admin));
+        account::create_account_for_test(signer::address_of(user));
+        coin::register<AptosCoin>(admin);
+        coin::register<AptosCoin>(user);
+
+        stake::mint(admin, 1000);
+        stake::mint(user, 1000);
+        add_validator();
+        stake(user, 100);
+        join(&staker_signer)
     }
 
     #[test(admin = @Staking, aptos_framework = @0x1, user = @0xa11ce)]
