@@ -139,7 +139,6 @@ module Staking::core {
         berserker_coin::mint(&staker_signer, signer::address_of(account), bs_aptos_amount);
     }
 
-    // TODO request unstake
     public entry fun unstake(user: &signer, bs_aptos_amount: u64) acquires Staker, State  {
         
         // that has to be done before burn
@@ -161,7 +160,6 @@ module Staking::core {
 
     }
 
-    // calim
     public entry fun claim(user: &signer) acquires Staker, State  {
 
         let user_address = signer::address_of(user);
@@ -196,11 +194,12 @@ module Staking::core {
 
     ////// MATH
 
-    // calculate berserker coin amount based on aptos coin amount
-    // bsaptos = aptos_amount * bs_aptos_supply / controlled_aptos same as 
-    // shares = amount_value * 1/share_price where 1/share_price=bs_aptos_supply/controlled_aptos
-
     public fun calculate_bsaptos_amount(aptos_amount: u64): u64 acquires State, Staker {
+
+        // calculate berserker coin amount based on aptos coin amount
+        // bsaptos = aptos_amount * bs_aptos_supply / controlled_aptos same as 
+        // shares = amount_value * 1/share_price where 1/share_price=bs_aptos_supply/controlled_aptos
+
         if(berserker_coin::get_supply() == 0u64){
             return aptos_amount
         };
@@ -211,11 +210,12 @@ module Staking::core {
         )
     }
 
-    // calculate aptos coin amount based on berserker coin amount
-    // aptos = bs_aptos_amount * controlled_aptos /  bs_aptos_supply same as 
-    // value  = shares * share_price where share_price=controlled_aptos/bs_aptos_supply
-
     public fun calculate_aptos_amount(bs_aptos_amount: u64): u64 acquires State, Staker {
+
+        // calculate aptos coin amount based on berserker coin amount
+        // aptos = bs_aptos_amount * controlled_aptos /  bs_aptos_supply same as 
+        // value  = shares * share_price where share_price=controlled_aptos/bs_aptos_supply
+        
         calculate_proportion(
             bs_aptos_amount,
             get_all_aptos_under_control(),
