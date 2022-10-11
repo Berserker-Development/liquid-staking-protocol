@@ -35,12 +35,17 @@ module Staking::core {
         aptos_amount: u64,
         epoch_index: u64
     }
+    struct Validator has store, drop {
+        validator_address: address,
+        current_stake: u64
+    }
 
     struct Staker has key {
         protocol_fee: u64,
         staker_signer_cap: account::SignerCapability,
         pending_claims: SimpleMap<address, Claim>,
         claims_accumulator: u64,
+        validators: SimpleMap<address, Validator>,
     }
 
     /// INIT
@@ -61,7 +66,8 @@ module Staking::core {
             protocol_fee,
             staker_signer_cap,
             pending_claims: simple_map::create<address, Claim>(),
-            claims_accumulator: 0u64
+            claims_accumulator: 0u64,
+            validators: simple_map::create<address, Validator>(),
         });
 
 
@@ -183,10 +189,10 @@ module Staking::core {
         let staker = borrow_global_mut<Staker>(state.staker_address);
         let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
 
-        // get current epoch 
+        // get current epoch
         let current_epoch_index = reconfiguration::current_epoch();
         let claim = simple_map::borrow(&staker.pending_claims, &user_address);
-        
+
         assert!(claim.epoch_index > current_epoch_index, TOO_EARLY_FOR_CLAIM);
         let aptos_amount = claim.aptos_amount;
 
