@@ -6,6 +6,8 @@ module Staking::core {
     use aptos_framework::reconfiguration;
 
     use std::signer;
+    use std::vector;
+    use std::bcs;
 
     use aptos_std::simple_map::{Self, SimpleMap};
 
@@ -37,6 +39,7 @@ module Staking::core {
     }
     struct Validator has store, drop {
         validator_address: address,
+        validator_signer_cap: account::SignerCapability,
         current_stake: u64
     }
 
@@ -45,7 +48,7 @@ module Staking::core {
         staker_signer_cap: account::SignerCapability,
         pending_claims: SimpleMap<address, Claim>,
         claims_accumulator: u64,
-        validators: SimpleMap<address, Validator>,
+        validators: vector<Validator>,
     }
 
     /// INIT
@@ -67,7 +70,7 @@ module Staking::core {
             staker_signer_cap,
             pending_claims: simple_map::create<address, Claim>(),
             claims_accumulator: 0u64,
-            validators: simple_map::create<address, Validator>(),
+            validators: vector::empty<Validator>(),
         });
 
 
@@ -85,8 +88,23 @@ module Staking::core {
     public entry fun add_validator() acquires State, Staker {
         // TODO add validator params
         let state = borrow_global<State>(ADMIN_ADDRESS);
-        let staker = borrow_global<Staker>(state.staker_address);
+        let staker = borrow_global_mut<Staker>(state.staker_address);
         let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
+
+        let bytes = bcs::to_bytes(&vector::length(&staker.validators));
+        vector::append(&mut bytes, STAKER_SEED);
+
+        // create valdator resource account
+        let (validator_signer, validator_signer_cap) = account::create_resource_account(&staker_signer, bytes); // TODO
+
+        vector::push_back(
+            &mut staker.validators,
+            Validator{
+                validator_address: signer::address_of(&validator_signer),
+                validator_signer_cap,
+                current_stake: 0
+            }
+        );
 
         // our validator // TODO use set of validator with uniqe pda
         stake::initialize_validator(
