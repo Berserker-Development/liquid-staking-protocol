@@ -44,7 +44,7 @@ module Staking::core {
     }
 
     /// INIT
-    public entry fun init(admin: &signer, monitor_supply: bool, protocol_fee: u64) {
+    public entry fun init(admin: &signer, protocol_fee: u64) {
         assert!(!exists<State>(signer::address_of(admin)), STATE_ALREADY_INITIALIZED);
         assert!(!berserker_coin::is_initialized(), COIN_ALREADY_INITIALIZED);
 
@@ -67,7 +67,7 @@ module Staking::core {
 
         // init berserker coin
         initialize_bsaptos(
-            admin, &staker_signer, monitor_supply
+            admin, &staker_signer
         );
 
         // register coins to ressource account
@@ -261,7 +261,7 @@ module Staking::core {
     #[test(admin = @Staking)]
     public entry fun test_init(admin: &signer) acquires State, Staker {   
         let protocol_fee = 1000;
-        init(admin, true, protocol_fee);
+        init(admin, protocol_fee);
         let admin_address = signer::address_of(admin);
         let state = borrow_global<State>(admin_address);
         let staker = borrow_global<Staker>(state.staker_address);
@@ -274,48 +274,48 @@ module Staking::core {
         assert!(is_account_registered<BsAptos>(state.staker_address), 0);
     }
 
-    #[test(admin = @Staking, aptos_framework = @0x1, user = @0xa11ce)]
-    public entry fun test_add_validator_and_join(admin: &signer, user: &signer, aptos_framework: &signer) acquires State, Staker {   
-        stake::initialize_for_test(aptos_framework);
-        let protocol_fee = 1000;
+    // #[test(admin = @Staking, aptos_framework = @0x1, user = @0xa11ce)]
+    // public entry fun test_add_validator_and_join(admin: &signer, user: &signer, aptos_framework: &signer) acquires State, Staker {
+    //     stake::initialize_for_test(aptos_framework);
+    //     let protocol_fee = 1000;
+    //
+    //
+    //     init(admin, protocol_fee);
+    //
+    //     let state = borrow_global<State>(ADMIN_ADDRESS);
+    //     let staker = borrow_global<Staker>(state.staker_address);
+    //     let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
+    //
+    //     account::create_account_for_test(signer::address_of(admin));
+    //     account::create_account_for_test(signer::address_of(user));
+    //     coin::register<AptosCoin>(admin);
+    //     coin::register<AptosCoin>(user);
+    //
+    //     stake::mint(admin, 1000);
+    //     stake::mint(user, 1000);
+    //     add_validator();
+    //     stake(user, 100);
+    //     join(&staker_signer)
+    // }
 
-
-        init(admin, true, protocol_fee);
-
-        let state = borrow_global<State>(ADMIN_ADDRESS);
-        let staker = borrow_global<Staker>(state.staker_address);
-        let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
-
-        account::create_account_for_test(signer::address_of(admin));
-        account::create_account_for_test(signer::address_of(user));
-        coin::register<AptosCoin>(admin);
-        coin::register<AptosCoin>(user);
-
-        stake::mint(admin, 1000);
-        stake::mint(user, 1000);
-        add_validator();
-        stake(user, 100);
-        join(&staker_signer)
-    }
-
-    #[test(admin = @Staking, aptos_framework = @0x1, user = @0xa11ce)]
-    public entry fun test_get_all_aptos_under_control(admin: &signer, user: &signer, aptos_framework: &signer) acquires State, Staker {   
-        stake::initialize_for_test(aptos_framework);
-        let protocol_fee = 1000;
-        init(admin, true, protocol_fee);
-
-        account::create_account_for_test(signer::address_of(admin));
-        account::create_account_for_test(signer::address_of(user));
-        coin::register<AptosCoin>(admin);
-        coin::register<AptosCoin>(user);
-
-        stake::mint(admin, 1000);
-        stake::mint(user, 1000);
-        add_validator();
-        assert!(get_all_aptos_under_control() == 0, 0);
-        stake(user, 100);
-        assert!(get_all_aptos_under_control() == 100, 0); // TODO 
-    }
+    // #[test(admin = @Staking, aptos_framework = @0x1, user = @0xa11ce)]
+    // public entry fun test_get_all_aptos_under_control(admin: &signer, user: &signer, aptos_framework: &signer) acquires State, Staker {
+    //     stake::initialize_for_test(aptos_framework);
+    //     let protocol_fee = 1000;
+    //     init(admin, protocol_fee);
+    //
+    //     account::create_account_for_test(signer::address_of(admin));
+    //     account::create_account_for_test(signer::address_of(user));
+    //     coin::register<AptosCoin>(admin);
+    //     coin::register<AptosCoin>(user);
+    //
+    //     stake::mint(admin, 1000);
+    //     stake::mint(user, 1000);
+    //     add_validator();
+    //     assert!(get_all_aptos_under_control() == 0, 0);
+    //     stake(user, 100);
+    //     assert!(get_all_aptos_under_control() == 100, 0); // TODO
+    // }
     
     #[test_only]
     public entry fun set_coins_amounts(
@@ -344,14 +344,14 @@ module Staking::core {
 
     #[test(admin = @Staking, aptos_framework = @0x1, user = @0x555,)]
     public entry fun test_calculate_bsaptos_amount_1(admin: &signer, aptos_framework: &signer, user: &signer,) acquires State, Staker  { 
-        init(admin, true, 100);
+        init(admin, 100);
         set_coins_amounts(user, aptos_framework, 100, 100);
         assert!(calculate_bsaptos_amount(100) == 100, 0);
     }
 
     #[test(admin = @Staking, aptos_framework = @0x1)]
     public entry fun test_calculate_bsaptos_amount_2(admin: &signer, aptos_framework: &signer) acquires State, Staker { 
-        init(admin, true, 100);
+        init(admin, 100);
         set_coins_amounts(admin, aptos_framework, 1000, 2000);
         assert!(calculate_bsaptos_amount(100) == 200, 0);
     }
@@ -359,14 +359,14 @@ module Staking::core {
 
     #[test(admin = @Staking, aptos_framework = @0x1)]
     public entry fun test_calculate_aptos_amount_1(admin: &signer, aptos_framework: &signer) acquires State, Staker { 
-        init(admin, true, 100);
+        init(admin, 100);
         set_coins_amounts(admin, aptos_framework, 100, 100);
         assert!(calculate_aptos_amount(100) == 100, 0);
     }
 
     #[test(admin = @Staking, aptos_framework = @0x1)]
     public entry fun test_calculate_aptos_amount_2(admin: &signer, aptos_framework: &signer) acquires State, Staker { 
-        init(admin, true, 100);
+        init(admin, 100);
         set_coins_amounts(admin, aptos_framework, 1000, 2000);
         assert!(calculate_aptos_amount(100) == 50, 0);
     }
