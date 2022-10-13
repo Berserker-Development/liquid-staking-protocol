@@ -1,5 +1,5 @@
 module Staking::core {
-    use aptos_framework::stake::{Self, join_validator_set, set_operator};
+    use aptos_framework::stake::{Self, set_operator};
     use aptos_framework::coin;
     use aptos_framework::aptos_coin::{AptosCoin};
     use aptos_framework::account;
@@ -13,10 +13,10 @@ module Staking::core {
 
     use Staking::berserker_coin::{Self, initialize_bsaptos, BsAptos};
 
-    const CONSENSUS_PUBKEY: vector<u8> = x"8f5aa6e3af3ea5c417a2996d09837da6928d47360041f8ab44e682563f491173a76f68f12100a888d6b1adddda92cf09";
-    const PROOF_OF_POSSESSTION: vector<u8> = x"a1e2d7fbac2c39e7444167037fcee7e4fed972c04669349e40e7393c4929a5ce85210e071dd1020d4062aa09d101144e139004575d1934932704a1034e4c86ba5e992e031c32de7ae77f87a474826847e19d3606f5302ef531f17ba07423da23";
-    const NETWORK_ADDRESSESS: vector<u8> = x"934a395380a14d909c1bdf141a5c84710f797cbbde4cc83486aa2d6116ef2772";
-    const FULLNODE_ADDRESSES: vector<u8> = x"9e2e97cb8b53e8b201823a85ad8366b6a452968c171d0504ed1ba0381a72c208";
+    const CONSENSUS_PUBKEY: vector<u8> = x"8fb3338680be5cb447fa552b2f9485c8a4930dadc8011d4ffdebf131d7f386e402ab71e119f667e4e8b662ed9425c8c6";
+    const PROOF_OF_POSSESSTION: vector<u8> = x"81086e0b1c7b50ff02662e12c1f3799500ad3a6edd2c18dd8e177d4a0aec727c5eddd10eaa749a12edcbd6b5e5c4308800f34a5789dd9e5a1ca27a359d7462a939d6fb894ff0dcc72145981b184966ad8bba47367ac043efcd54ba0276ef4d78";
+    const NETWORK_ADDRESSESS: vector<u8> = x"2834c889bd133f690823bb2d75b4af5b0d382c5684dbe9541071a4999f9fe629";
+    const FULLNODE_ADDRESSES: vector<u8> = x"b0788a6717f7cb35cf0b0b3b6c6f69da4a542b5f45a4958a7c9d2a24c2c0ce63";
 
     const STAKER_SEED: vector<u8> = b"Staker";
     const ADMIN_ADDRESS: address = @Staking;
@@ -41,6 +41,7 @@ module Staking::core {
         validator_address: address,
         validator_signer_cap: account::SignerCapability,
         current_stake: u64
+        //TODO add index
     }
 
     struct Staker has key {
@@ -49,6 +50,7 @@ module Staking::core {
         pending_claims: SimpleMap<address, Claim>,
         claims_accumulator: u64,
         validators: vector<Validator>,
+        validator_count: u64
     }
 
     /// INIT
@@ -71,6 +73,7 @@ module Staking::core {
             pending_claims: simple_map::create<address, Claim>(),
             claims_accumulator: 0u64,
             validators: vector::empty<Validator>(),
+            validator_count: 0u64
         });
 
 
@@ -85,17 +88,23 @@ module Staking::core {
     }
 
     ///// VALIDATOR MANAGMENT
-    public entry fun add_validator() acquires State, Staker {
+    public entry fun add_validator(
+        consensus_pubkey: vector<u8>,
+        proof_of_possession: vector<u8>,
+        network_addresses: vector<u8>,
+        fullnode_addresses: vector<u8>,
+    ) acquires State, Staker {
         // TODO add validator params
         let state = borrow_global<State>(ADMIN_ADDRESS);
         let staker = borrow_global_mut<Staker>(state.staker_address);
         let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
-
-        let bytes = bcs::to_bytes(&vector::length(&staker.validators));
+        let bytes = bcs::to_bytes(&staker.validator_count); //TODO think about seed 
+        staker.validator_count = staker.validator_count + 1;
         vector::append(&mut bytes, STAKER_SEED);
 
         // create valdator resource account
         let (validator_signer, validator_signer_cap) = account::create_resource_account(&staker_signer, bytes); // TODO
+        coin::register<AptosCoin>(&validator_signer);
 
         vector::push_back(
             &mut staker.validators,
@@ -108,12 +117,14 @@ module Staking::core {
 
         // our validator // TODO use set of validator with uniqe pda
         stake::initialize_validator(
-            &staker_signer, CONSENSUS_PUBKEY, PROOF_OF_POSSESSTION, NETWORK_ADDRESSESS, FULLNODE_ADDRESSES
+            &validator_signer, consensus_pubkey, proof_of_possession, network_addresses, fullnode_addresses
         );
 
         // TODO add posibility to add external validator
         // stake::initialize_stake_owner
     }
+
+    ///// VALIDATOR MANAGMENT
 
     // public entry fun initaial_stake(validator: &signer, amount: u64) acquires State{
     //     let (min_stake, _) = staking_config::get_required_stake(&staking_config::get());
@@ -137,9 +148,16 @@ module Staking::core {
         set_operator(&staker_signer, ADMIN_ADDRESS);
     }
 
-    public entry fun join(validator: &signer) {
-        let validator_address = signer::address_of(validator);
-        join_validator_set(validator, validator_address);
+    public entry fun join() acquires State, Staker {
+        // get staker signer
+        let state = borrow_global<State>(ADMIN_ADDRESS);
+        let staker = borrow_global<Staker>(state.staker_address);
+
+        // get validator signer
+        let validator = vector::borrow(&staker.validators, 0); // instead of 0 choose validator
+        let validator_signer = account::create_signer_with_capability(&validator.validator_signer_cap);
+        let validator_address = signer::address_of(&validator_signer);
+        stake::join_validator_set(&validator_signer, validator_address);
     }
 
     ///// STAKE MANAGMENT
@@ -160,9 +178,12 @@ module Staking::core {
         let staker = borrow_global<Staker>(state.staker_address);
         let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
 
-        coin::transfer<AptosCoin>(account, state.staker_address, aptos_amount);
-        stake::add_stake(&staker_signer, aptos_amount);
+        // get validator signer
+        let validator = vector::borrow(&staker.validators, 0); // instead of 0 choose validator
+        let validator_signer = account::create_signer_with_capability(&validator.validator_signer_cap);
 
+        coin::transfer<AptosCoin>(account, signer::address_of(&validator_signer), aptos_amount);
+        stake::add_stake(&validator_signer, aptos_amount);
 
         if(!coin::is_account_registered<BsAptos>(signer::address_of(account))) {
             coin::register<BsAptos>(account);
@@ -195,7 +216,10 @@ module Staking::core {
 
         // update cliam accumulator
         staker.claims_accumulator = staker.claims_accumulator + aptos_amount;
-        stake::unlock(&staker_signer, aptos_amount);
+
+        let validator = vector::borrow(&staker.validators, 0); // instead of 0 choose validator
+        let validator_signer = account::create_signer_with_capability(&validator.validator_signer_cap);
+        stake::unlock(&validator_signer, aptos_amount);
 
     }
 
@@ -230,8 +254,12 @@ module Staking::core {
     public fun get_all_aptos_under_control(): u64 acquires State, Staker{
         let state = borrow_global<State>(ADMIN_ADDRESS);
         let staker = borrow_global<Staker>(state.staker_address);
-        let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
-        let (active, inactive, pending_active, pending_inactive) = stake::get_stake(signer::address_of(&staker_signer));
+
+        // get validator signer
+        let validator = vector::borrow(&staker.validators, 0); // instead of 0 choose validator
+        let validator_signer = account::create_signer_with_capability(&validator.validator_signer_cap);
+
+        let (active, inactive, pending_active, pending_inactive) = stake::get_stake(signer::address_of(&validator_signer));
         // contorlled aptos - claims accumulator
         return active + inactive + pending_active + pending_inactive - staker.claims_accumulator
     }
@@ -277,6 +305,12 @@ module Staking::core {
         (num as u128)
     }
 
+    fun get_staker_signer(): signer acquires State, Staker {
+        let state = borrow_global<State>(ADMIN_ADDRESS);
+        let staker = borrow_global<Staker>(state.staker_address);
+        account::create_signer_with_capability(&staker.staker_signer_cap)
+    }
+
     ////// TESTS
 
     #[test_only]
@@ -306,10 +340,6 @@ module Staking::core {
 
         init(admin, true, protocol_fee);
 
-        let state = borrow_global<State>(ADMIN_ADDRESS);
-        let staker = borrow_global<Staker>(state.staker_address);
-        let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
-
         account::create_account_for_test(signer::address_of(admin));
         account::create_account_for_test(signer::address_of(user));
         coin::register<AptosCoin>(admin);
@@ -317,9 +347,9 @@ module Staking::core {
 
         stake::mint(admin, 1000);
         stake::mint(user, 1000);
-        add_validator();
+        add_validator( CONSENSUS_PUBKEY, PROOF_OF_POSSESSTION, NETWORK_ADDRESSESS, FULLNODE_ADDRESSES);
         stake(user, 100);
-        join(&staker_signer)
+        join()
     }
 
     #[test(admin = @Staking, aptos_framework = @0x1, user = @0xa11ce)]
@@ -335,7 +365,7 @@ module Staking::core {
 
         stake::mint(admin, 1000);
         stake::mint(user, 1000);
-        add_validator();
+        add_validator(CONSENSUS_PUBKEY, PROOF_OF_POSSESSTION, NETWORK_ADDRESSESS, FULLNODE_ADDRESSES);
         assert!(get_all_aptos_under_control() == 0, 0);
         stake(user, 100);
         assert!(get_all_aptos_under_control() == 100, 0); // TODO 
@@ -349,20 +379,23 @@ module Staking::core {
         bs_aptos_amount: u64
     ) acquires State, Staker {
         stake::initialize_for_test(aptos_framework);
+
+        add_validator(CONSENSUS_PUBKEY, PROOF_OF_POSSESSTION, NETWORK_ADDRESSESS, FULLNODE_ADDRESSES);
         let state = borrow_global<State>(ADMIN_ADDRESS);
         let staker = borrow_global<Staker>(state.staker_address);
-        let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
-
-        // increase controlled aptos by mint aptos to staker and stake
-        stake::mint(&staker_signer, aptos_amount);
-        add_validator();
-        stake::add_stake(&staker_signer, aptos_amount);
+        let validator = vector::borrow(&staker.validators,0);
+        let validator_signer = account::create_signer_with_capability(&validator.validator_signer_cap);
+        // increase controlled aptos by mint aptos to validator and stake
+        stake::mint(&validator_signer, aptos_amount);
+        stake::add_stake(&validator_signer, aptos_amount);
 
         // mint bs aptos to user
         account::create_account_for_test(signer::address_of(user));
         if(!coin::is_account_registered<BsAptos>(signer::address_of(user))) {
             coin::register<BsAptos>(user);
         };
+
+        let staker_signer = get_staker_signer();
         berserker_coin::mint(&staker_signer, signer::address_of(user), bs_aptos_amount);
     }
 
