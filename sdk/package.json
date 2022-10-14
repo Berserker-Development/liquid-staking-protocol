@@ -2,7 +2,7 @@
   "name": "sdk",
   "version": "0.0.1",
   "author": "Wojciech Cichocki",
-  "description": "",
+  "description": "@berserker-development/staker",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
@@ -15,7 +15,8 @@
     "stake": "ts-node scripts/stake.ts",
     "join": "ts-node scripts/join.ts",
     "add-validator": "ts-node scripts/add-validator.ts",
-    "get-validators": "ts-node scripts/get-validators.ts"
+    "get-validators": "ts-node scripts/get-validators.ts",
+    "build": "tsc"
   },
   "keywords": [],
   "dependencies": {

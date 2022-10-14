@@ -1,8 +1,7 @@
-import { AptosAccount, FaucetClient } from 'aptos'
+import { FaucetClient } from 'aptos'
 import {
   compileAndDeploy,
   FAUCET_URL,
-  init,
   loadAdminFromConfig,
   sleep,
   TESTNET_URL
