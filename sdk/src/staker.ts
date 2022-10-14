@@ -105,8 +105,18 @@ export class Staker {
     return await this.signAndSend(scriptFunctionPayload)
   }
 
-  public async addValidator() {
-    const scriptFunctionPayload: Types.TransactionPayload = await this.addValidatorPayload()
+  public async addValidator(
+    consensusPubkey: Uint8Array,
+    proofOfPossession: Uint8Array,
+    networkAddresses: string,
+    fullnodeAddresses: string
+  ) {
+    const scriptFunctionPayload: Types.TransactionPayload = await this.addValidatorPayload(
+      consensusPubkey,
+      proofOfPossession,
+      networkAddresses,
+      fullnodeAddresses
+    )
     return await this.signAndSend(scriptFunctionPayload)
   }
 
@@ -205,12 +215,17 @@ export class Staker {
     }
   }
 
-  public async addValidatorPayload(): Promise<Types.TransactionPayload> {
+  public async addValidatorPayload(
+    consensusPubkey: Uint8Array,
+    proofOfPossession: Uint8Array,
+    networkAddresses: string,
+    fullnodeAddresses: string
+  ): Promise<Types.TransactionPayload> {
     return {
       type: 'entry_function_payload',
       function: `${this.contractAddress}::core::add_validator`,
       type_arguments: [],
-      arguments: []
+      arguments: [consensusPubkey, proofOfPossession, networkAddresses, fullnodeAddresses]
     }
   }
 }
