@@ -8,9 +8,9 @@ import { promises as fsPromises } from 'fs'
 import { AptosConfig, IWallet } from './interfaces'
 import toHex from 'to-hex'
 
-export const TESTNET_URL = 'https://fullnode.devnet.aptoslabs.com/v1'
+export const TESTNET_URL = 'https://fullnode.testnet.aptoslabs.com/v1'
 //export const TESTNET_URL = 'https://rpc.aptos.nightly.app'
-export const FAUCET_URL = 'https://faucet.devnet.aptoslabs.com'
+export const FAUCET_URL = 'https://faucet.testnet.aptoslabs.com'
 export const VALIDATOR_PUBKEY = '7a4b42b50d724ad70e4ea56c1e4d4c5c9cc94d56ad5b1690214ba84f39cea46e'
 export const VALIDATOR_PRIVKEY =
   '0xb2e9ca5a61a842d75e29a5cb9cea053af9847f61e5abf2f4ff517d77ad066568'
@@ -28,7 +28,8 @@ export class TestWallet implements IWallet {
   async signTransaction(tx: Types.TransactionPayload): Promise<Uint8Array> {
     const rawTx = await this.client.generateTransaction(
       this.publicKey.address(),
-      tx as Types.EntryFunctionPayload
+      tx as Types.EntryFunctionPayload,
+      { max_gas_amount: '100000' }
     )
     return await this.client.signTransaction(this.account, rawTx)
   }
@@ -95,7 +96,7 @@ export const compile = async (account: AptosAccount) => {
   // compile
   const keyObject = account.toPrivateKeyObject()
   const compile = 'cd .. && aptos move compile --named-addresses ' + 'Staking=' + keyObject.address
-  console.log(compile)
+
   await execShellCommand(compile)
 }
 
@@ -120,6 +121,7 @@ export const compileAndDeploy = async (account: AptosAccount, url: string = TEST
     ' --max-gas 1000000' +
     ' --included-artifacts none' +
     ' --gas-unit-price 100'
+
   await execShellCommand(deploy)
 }
 
