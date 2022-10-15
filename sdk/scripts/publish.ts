@@ -1,11 +1,5 @@
 import { FaucetClient } from 'aptos'
-import {
-  compileAndDeploy,
-  FAUCET_URL,
-  loadAdminFromConfig,
-  sleep,
-  TESTNET_URL
-} from '../src/utils'
+import { compileAndDeploy, FAUCET_URL, loadAdminFromConfig, sleep, TESTNET_URL } from '../src/utils'
 
 const main = async () => {
   //await init()

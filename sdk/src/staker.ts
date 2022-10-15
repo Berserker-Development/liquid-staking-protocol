@@ -9,12 +9,7 @@ import {
   ValidatorSet
 } from './interfaces'
 import { sha3_256 } from 'js-sha3'
-import {
-  Address,
-  RawTransaction as RawTxn,
-  TransactionPayload,
-  TransactionPayloadEntryFunction as TransactionPayloadEntry
-} from './types'
+import { Address, RawTransaction as RawTxn, TransactionPayload } from './types'
 import toHex from 'to-hex'
 import { sleep } from './utils'
 
@@ -64,17 +59,15 @@ export class Staker {
       this.aptosClient.getChainId()
     ])
 
-    const rawTxn: RawTxn = new RawTransaction(
-      AccountAddress.fromHex(this.wallet.publicKey.address()), // from
-      BigInt(sequenceNumber), // sequence number
-      payload, // payload
-      1000n, // max_gas_amount
-      1n, // gas_unit_price
-      BigInt(Math.floor(Date.now() / 1000) + 10), // expiration_time 10 seconds from now
-      new ChainId(chainId) // chain_id
+    return new RawTransaction(
+        AccountAddress.fromHex(this.wallet.publicKey.address()), // from
+        BigInt(sequenceNumber), // sequence number
+        payload, // payload
+        1000n, // max_gas_amount
+        1n, // gas_unit_price
+        BigInt(Math.floor(Date.now() / 1000) + 10), // expiration_time 10 seconds from now
+        new ChainId(chainId) // chain_id
     )
-
-    return rawTxn
   }
 
   async signAndSend(rawTx: Types.TransactionPayload) {
