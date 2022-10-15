@@ -52,11 +52,8 @@ export class Staker {
     return sha3_256(new Uint8Array([...addressArray, ...seedArray]))
   }
 
-  public async init(monitorSupply: boolean, amount: number) {
-    const scriptFunctionPayload: Types.TransactionPayload = await this.initPayload(
-      monitorSupply,
-      amount
-    )
+  public async init(protocolFee: number) {
+    const scriptFunctionPayload: Types.TransactionPayload = await this.initPayload(protocolFee)
 
     return await this.signAndSend(scriptFunctionPayload)
   }
@@ -168,13 +165,19 @@ export class Staker {
       .data as StakingConfig
   }
 
+  public async getExchangeRate() {
+    //TODO: Add implementation
+    // berserker supply
+
+  }
+
   // PAYLOADS
-  public async initPayload(monitorSupply: boolean, fee: number): Promise<Types.TransactionPayload> {
+  public async initPayload(protocolFee: number): Promise<Types.TransactionPayload> {
     return {
       type: 'entry_function_payload',
       function: `${this.contractAddress}::core::init`,
       type_arguments: [],
-      arguments: [monitorSupply, fee]
+      arguments: [protocolFee]
     }
   }
 

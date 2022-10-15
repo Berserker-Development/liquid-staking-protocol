@@ -60,7 +60,7 @@ module Staking::core {
 
         // init staker resource
         move_to<Staker>(&staker_signer, Staker {
-            protocol_fee,
+            protocol_fee, //e.g. 10000bps = 100%
             staker_signer_cap,
             pending_claims: simple_map::create<address, Claim>(),
             claims_accumulator: 0u64
