@@ -167,13 +167,14 @@ module Staking::core {
             signer::address_of(user),
             Claim {
                 aptos_amount,
-                epoch_index: current_epoch_index
+                epoch_index: current_epoch_index - 1 // tmp solution: instant claim
             }
         );
 
         // update cliam accumulator
         staker.claims_accumulator = staker.claims_accumulator + aptos_amount;
-        stake::unlock(&staker_signer, aptos_amount);
+        //TODO: unlcok
+        // stake::unlock(&staker_signer, aptos_amount);
     }
 
     public entry fun claim(user: &signer) acquires Staker, State {
@@ -187,14 +188,15 @@ module Staking::core {
         let current_epoch_index = reconfiguration::current_epoch();
         let claim = simple_map::borrow(&staker.pending_claims, &user_address);
 
-        assert!(claim.epoch_index > current_epoch_index, TOO_EARLY_FOR_CLAIM);
+        assert!(claim.epoch_index < current_epoch_index, TOO_EARLY_FOR_CLAIM);
         let aptos_amount = claim.aptos_amount;
 
         // update cliam accumulator
         staker.claims_accumulator = staker.claims_accumulator - aptos_amount;
 
         // withdraw and return aptos to user
-        stake::withdraw(&staker_signer, aptos_amount);
+        // TODO: withdraw from stake
+        // stake::withdraw(&staker_signer, aptos_amount);
         coin::transfer<AptosCoin>(&staker_signer, user_address, aptos_amount);
 
         // stop tracking claim
@@ -206,9 +208,12 @@ module Staking::core {
         let state = borrow_global<State>(ADMIN_ADDRESS);
         let staker = borrow_global<Staker>(state.staker_address);
         let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
-        let (active, inactive, pending_active, pending_inactive) = stake::get_stake(signer::address_of(&staker_signer));
+
+        coin::balance<AptosCoin>(state.staker_address)
+        //TODO: get_stale
+        // let (active, inactive, pending_active, pending_inactive) = stake::get_stake(signer::address_of(&staker_signer));
         // contorlled aptos - claims accumulator
-        return active + inactive + pending_active + pending_inactive - staker.claims_accumulator
+        // return active + inactive + pending_active + pending_inactive - staker.claims_accumulator
     }
 
     public fun get_exchange_rate(): u64 acquires State, Staker {
