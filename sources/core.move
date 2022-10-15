@@ -46,7 +46,7 @@ module Staking::core {
 
     /// INIT
     public entry fun init(admin: &signer, protocol_fee: u64) {
-        // assert!(signer::address_of(admin) == ADMIN_ADDRESS, WRONG_ADMIN);
+        assert!(signer::address_of(admin) == ADMIN_ADDRESS, WRONG_ADMIN);
         assert!(!exists<State>(signer::address_of(admin)), STATE_ALREADY_INITIALIZED);
         assert!(!berserker_coin::is_initialized(), COIN_ALREADY_INITIALIZED);
 
@@ -139,8 +139,8 @@ module Staking::core {
         let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
 
         coin::transfer<AptosCoin>(account, state.staker_address, aptos_amount);
-        stake::add_stake(&staker_signer, aptos_amount);
-
+        // TODO: use stake
+        // stake::add_stake(&staker_signer, aptos_amount);
 
         if (!coin::is_account_registered<BsAptos>(signer::address_of(account))) {
             coin::register<BsAptos>(account);
