@@ -63,12 +63,12 @@ export class Staker {
 
   public async getRawTransaction(payload: TransactionPayload): Promise<RawTxn> {
     const [{ sequence_number: sequenceNumber }, chainId] = await Promise.all([
-      this.aptosClient.getAccount(this.wallet.account.address()),
+      this.aptosClient.getAccount(this.wallet.publicKey.address()),
       this.aptosClient.getChainId()
     ])
 
     const rawTxn: RawTxn = new RawTransaction(
-      AccountAddress.fromHex(this.wallet.account.address()), // from
+      AccountAddress.fromHex(this.wallet.publicKey.address()), // from
       BigInt(sequenceNumber), // sequence number
       payload, // payload
       1000n, // max_gas_amount

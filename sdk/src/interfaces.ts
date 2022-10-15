@@ -1,5 +1,6 @@
-import { AptosAccount, AptosClient, BCS, FaucetClient, Types } from 'aptos'
-import { Address } from './types'
+import { AptosAccount, AptosClient, BCS, FaucetClient, Types} from 'aptos'
+import { EntryFunctionPayload, TransactionPayload } from 'aptos/src/generated/index'
+import {AptosPublicKey} from "./utils";
 
 export interface AptosCoin {
   data: {
@@ -18,7 +19,7 @@ export interface StakerResource {
 }
 
 export interface SignerCapability {
-  account: Address
+  account: any // TODO: add type
 }
 
 export interface StakingConfig {
@@ -35,7 +36,7 @@ export interface StakerParams {
   aptosClient: AptosClient
   faucetClient: FaucetClient
   wallet: IWallet
-  contractAddress: Address
+  contractAddress: any // TODO: add type
 }
 
 export interface ValidatorSet {
@@ -71,6 +72,7 @@ export interface AptosConfig {
 export const { bcsSerializeUint64, bcsSerializeBool } = BCS
 
 export interface IWallet {
-  signTransaction: (tx: Types.TransactionPayload) => Promise<Uint8Array>
-  account: AptosAccount
+  signTransaction: (tx: TransactionPayload) => Promise<Uint8Array>
+  signAllTransactions: (txs: TransactionPayload[]) => Promise<Uint8Array[]>
+  publicKey: AptosPublicKey
 }

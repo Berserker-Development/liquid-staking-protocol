@@ -1,12 +1,13 @@
 import * as SHA3 from 'js-sha3'
 import { sha3_256 } from 'js-sha3'
 import base58 from 'bs58'
-import { AptosAccount, AptosClient, HexString, Types } from 'aptos'
+import { AptosAccount, AptosClient, EntryFunctionPayload, HexString } from 'aptos'
 import * as yaml from 'js-yaml'
 import * as path from 'path'
 import { promises as fsPromises } from 'fs'
 import { AptosConfig, IWallet } from './interfaces'
 import toHex from 'to-hex'
+import { TransactionPayload } from 'aptos/src/generated/index'
 
 export const TESTNET_URL = 'https://fullnode.devnet.aptoslabs.com/v1'
 //export const TESTNET_URL = 'https://rpc.aptos.nightly.app'
@@ -25,12 +26,33 @@ export class TestWallet implements IWallet {
     this.publicKey = new AptosPublicKey(account.pubKey().toString())
     this.client = client
   }
-  async signTransaction(tx: Types.TransactionPayload): Promise<Uint8Array> {
+  async signTransaction(tx: TransactionPayload, max_gas_amount?: string): Promise<Uint8Array> {
     const rawTx = await this.client.generateTransaction(
-      this.publicKey.address(),
-      tx as Types.EntryFunctionPayload
+        this.publicKey.address(),
+        tx as EntryFunctionPayload,
+        {
+          max_gas_amount: max_gas_amount
+        }
     )
+
     return await this.client.signTransaction(this.account, rawTx)
+  }
+  
+  async signAllTransactions(txs: TransactionPayload[]): Promise<Uint8Array[]> {
+    const [{ sequence_number: sequenceNumber }] = await Promise.all([
+      this.client.getAccount(this.publicKey.address())
+    ])
+
+    return Promise.all(
+        txs.map(async (tx, index) => {
+          const rawTx = await this.client.generateTransaction(
+              this.publicKey.address(),
+              tx as EntryFunctionPayload,
+              {sequence_number: Number(Number(sequenceNumber) + index).toString()}
+          )
+          return await this.client.signTransaction(this.account, rawTx)
+        })
+    )
   }
 }
 
