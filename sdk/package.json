@@ -14,6 +14,7 @@
     "unit-test": "ts-node scripts/unit-tests.ts",
     "init": "ts-node scripts/init.ts",
     "stake": "ts-node scripts/stake.ts",
+    "unstake": "ts-node scripts/unstake.ts",
     "join": "ts-node scripts/join.ts",
     "add-validator": "ts-node scripts/add-validator.ts",
     "get-validators": "ts-node scripts/get-validators.ts",
