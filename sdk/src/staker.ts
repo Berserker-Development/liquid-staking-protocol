@@ -32,7 +32,7 @@ export class Staker {
     this.contractAddress = contractAddress
     this.wallet = wallet ?? new UnconnectedWallet()
     // TODO: calculating Resource account not work
-    this.stakerResourceAddress = Staker.getResourceAccountAddress(
+    this.stakerResourceAddress = Staker.calculateResourceAccountAddress(
       new HexString(contractAddress),
       STAKER_SEED
     )
@@ -46,11 +46,15 @@ export class Staker {
     this.wallet = wallet
   }
 
-  private static getResourceAccountAddress(address: HexString, seed: string) {
+  private static calculateResourceAccountAddress(address: HexString, seed: string) {
     const seedHex: string = toHex(seed)
     const addressArray: Uint8Array = address.toUint8Array()
     const seedArray: Uint8Array = Uint8Array.from(Buffer.from(seedHex, 'hex'))
     return sha3_256(new Uint8Array([...addressArray, ...seedArray]))
+  }
+
+  public getResourceAccountAddress() {
+    return this.stakerResourceAddress
   }
 
   public async init(protocolFee: number) {
@@ -91,7 +95,9 @@ export class Staker {
 
     const signedTxns: Uint8Array[] = await this.wallet.signAllTransactions(rawTxs)
 
-    const res = await Promise.all(signedTxns.map(txn => this.aptosClient.submitSignedBCSTransaction(txn)))
+    const res = await Promise.all(
+      signedTxns.map(txn => this.aptosClient.submitSignedBCSTransaction(txn))
+    )
     await sleep(2000)
     return Promise.all(res.map(singleRes => Promise.resolve(singleRes.hash)))
   }
@@ -147,11 +153,11 @@ export class Staker {
   }
 
   public async getAptosCoinBalance(address: MaybeHexString): Promise<number> {
-    const testCoinStore = (await this.aptosClient.getAccountResource(
+    const aptosCoinStore = (await this.aptosClient.getAccountResource(
       address,
       '0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>'
     )) as any as AptosCoin
-    const balance: string = testCoinStore.data.coin.value
+    const balance: string = aptosCoinStore.data.coin.value
     return Number.parseInt(balance)
   }
 
@@ -202,9 +208,33 @@ export class Staker {
       .data as StakingConfig
   }
 
+  public async getBsAptosBalance(address: MaybeHexString): Promise<number> {
+    const bsAptosCoinStore = (await this.aptosClient.getAccountResource(
+      address,
+      `0x1::coin::CoinStore<${this.contractAddress}::berserker_coin::BsAptos>`
+    )) as any
+    const balance: string = bsAptosCoinStore.data.coin.value
+    return Number.parseInt(balance)
+  }
+
+  public async getBsAptosInfo(): Promise<number> {
+    const data = await this.aptosClient.getAccountResource(
+      this.stakerResourceAddress,
+      `0x1::coin::CoinInfo<${this.contractAddress}::berserker_coin::BsAptos>`
+    )
+    console.log(data)
+    // this.stakerResourceAddress
+    // 0x1::coin::CoinInfo<0x43e1bb2485a7cd76916a2783baa80bb5301f3c769a45ed761ae288b7568107b3::berserker_coin::BsAptos>
+
+    throw new Error('No implemented')
+  }
+
   public async getExchangeRate() {
+    //
     //TODO: Add implementation
     // berserker supply
+
+    throw new Error('No implemented')
   }
 
   // PAYLOADS
