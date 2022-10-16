@@ -18,7 +18,8 @@ module Staking::core {
 
     const STAKER_SEED: vector<u8> = b"Staker";
     const ADMIN_ADDRESS: address = @Staking;
-    const DENOMINATOR: u128 = 100000000000; // 10^12
+    const DENOMINATOR: u128 = 100000000000;
+    // 10^12
     /////ERRORS
     const STATE_ALREADY_INITIALIZED: u64 = 0;
     const COIN_ALREADY_INITIALIZED: u64 = 1;
@@ -103,7 +104,6 @@ module Staking::core {
         let state = borrow_global<State>(ADMIN_ADDRESS);
         assert!(signer::address_of(validator) != state.staker_address, INVALID_ADDRESS);
         set_operator(validator, state.staker_address);
-
     }
 
     public entry fun set_operator_to_admin(admin: &signer) acquires State, Staker {
@@ -149,7 +149,6 @@ module Staking::core {
     }
 
     public entry fun unstake(user: &signer, bs_aptos_amount: u64) acquires Staker, State {
-
         // that has to be done before burn
         let aptos_amount = calculate_aptos_amount(bs_aptos_amount);
 
@@ -214,10 +213,6 @@ module Staking::core {
         // let (active, inactive, pending_active, pending_inactive) = stake::get_stake(signer::address_of(&staker_signer));
         // contorlled aptos - claims accumulator
         // return active + inactive + pending_active + pending_inactive - staker.claims_accumulator
-    }
-
-    public fun get_exchange_rate(): u64 acquires State, Staker {
-        get_all_aptos_under_control() / berserker_coin::get_supply()
     }
 
     ////// MATH
