@@ -1,25 +1,31 @@
-import { AptosAccount, AptosClient, BCS, FaucetClient, Types} from 'aptos'
-import { EntryFunctionPayload, TransactionPayload } from 'aptos/src/generated/index'
-import {AptosPublicKey} from "./utils";
+import { AptosClient, BCS, FaucetClient } from 'aptos'
+import { TransactionPayload } from 'aptos/src/generated/index'
+import { AptosPublicKey } from './utils'
+import { Address } from './types'
 
 export interface AptosCoin {
   data: {
     coin: { value: string }
   }
 }
+
 export interface BsAptosCoin {
   data: {
     coin: { value: string }
   }
 }
 
+export interface State {
+  stakerAddress: Address
+}
+
 export interface StakerResource {
-  fee: number
+  protocolFee: number
   stakerSignerCap: SignerCapability
 }
 
 export interface SignerCapability {
-  account: any // TODO: add type
+  account: Address
 }
 
 export interface StakingConfig {
@@ -36,7 +42,7 @@ export interface StakerParams {
   aptosClient: AptosClient
   faucetClient: FaucetClient
   wallet: IWallet
-  contractAddress: any // TODO: add type
+  contractAddress: Address
 }
 
 export interface ValidatorSet {

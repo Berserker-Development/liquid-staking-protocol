@@ -6,6 +6,7 @@ import {
   StakerParams,
   StakerResource,
   StakingConfig,
+  State,
   ValidatorSet
 } from './interfaces'
 import { sha3_256 } from 'js-sha3'
@@ -30,7 +31,8 @@ export class Staker {
     this.faucetClient = faucetClient
     this.wallet = wallet
     this.contractAddress = contractAddress
-    this.stakerResourceAddress = this.getResourceAccountAddress(
+    // TODO: calculating Resource account not work
+    this.stakerResourceAddress = Staker.getResourceAccountAddress(
       new HexString(contractAddress),
       STAKER_SEED
     )
@@ -40,7 +42,7 @@ export class Staker {
     return new Staker(params)
   }
 
-  private getResourceAccountAddress(address: HexString, seed: string) {
+  private static getResourceAccountAddress(address: HexString, seed: string) {
     const seedHex: string = toHex(seed)
     const addressArray: Uint8Array = address.toUint8Array()
     const seedArray: Uint8Array = Uint8Array.from(Buffer.from(seedHex, 'hex'))
@@ -60,13 +62,13 @@ export class Staker {
     ])
 
     return new RawTransaction(
-        AccountAddress.fromHex(this.wallet.publicKey.address()), // from
-        BigInt(sequenceNumber), // sequence number
-        payload, // payload
-        1000n, // max_gas_amount
-        1n, // gas_unit_price
-        BigInt(Math.floor(Date.now() / 1000) + 10), // expiration_time 10 seconds from now
-        new ChainId(chainId) // chain_id
+      AccountAddress.fromHex(this.wallet.publicKey.address()), // from
+      BigInt(sequenceNumber), // sequence number
+      payload, // payload
+      1000n, // max_gas_amount
+      1n, // gas_unit_price
+      BigInt(Math.floor(Date.now() / 1000) + 10), // expiration_time 10 seconds from now
+      new ChainId(chainId) // chain_id
     )
   }
 
@@ -111,6 +113,19 @@ export class Staker {
   }
 
   // QUERIES
+  public async getState() {
+    const rawState = (
+      await this.aptosClient.getAccountResource(
+        this.contractAddress,
+        `${this.contractAddress}::core::State`
+      )
+    ).data as any
+    const state: State = {stakerAddress: rawState.staker_address}
+
+    this.stakerResourceAddress = state.stakerAddress
+    return state
+  }
+
   public async getAptosCoinBalance(address: MaybeHexString): Promise<number> {
     const testCoinStore = (await this.aptosClient.getAccountResource(
       address,
@@ -144,7 +159,7 @@ export class Staker {
     ).data as any
 
     return {
-      fee: Number(data.protocol_fee),
+      protocolFee: Number(data.protocol_fee),
       stakerSignerCap: data.staker_signer_cap
     }
   }
@@ -166,7 +181,6 @@ export class Staker {
   public async getExchangeRate() {
     //TODO: Add implementation
     // berserker supply
-
   }
 
   // PAYLOADS
