@@ -7,7 +7,7 @@ const main = async () => {
   console.log(`balance before = ${balanceBefore}`)
 
   let stakeTx = await staker.unstake(1_000_000)
-  console.log(`stake tx hash: ${stakeTx}`)
+  console.log(`unstake tx hash: ${stakeTx}`)
 
   const claimTx = await staker.claim()
   console.log(`claim tx hash: ${claimTx}`)
