@@ -15,15 +15,17 @@ const main = async () => {
   //TODO: tmp solution (require to load valid PDA)
   await staker.getState()
 
-  // console.log(`stakerResource = ${staker.getResourceAccountAddress()}`)
-
   const bsAptosBalance = await staker.getBsAptosBalance(admin.address())
   console.log(`bsAptosBalance = ${bsAptosBalance}`)
 
-  // const allStakedAptos = await staker.getAllStakedAptos()
-  // console.log(`allStakedAptos = ${allStakedAptos}`)
+  const allStakedAptos = await staker.getAllStakedAptos()
+  console.log(`allStakedAptos = ${allStakedAptos}`)
 
-  // await staker.getBsAptosInfo()
+  const bsAptosSupply = await staker.getBsAptosSupply();
+  console.log(`bsAptosSupply = ${bsAptosSupply}`)
+
+  const exchangeRate = await staker.getExchangeRate();
+  console.log(`exchangeRate = ${exchangeRate}`)
 }
 
 main()

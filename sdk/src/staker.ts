@@ -217,24 +217,19 @@ export class Staker {
     return Number.parseInt(balance)
   }
 
-  public async getBsAptosInfo(): Promise<number> {
-    const data = await this.aptosClient.getAccountResource(
-      this.stakerResourceAddress,
+  public async getBsAptosSupply(): Promise<number> {
+    const rawData = (await this.aptosClient.getAccountResource(
+      this.contractAddress,
       `0x1::coin::CoinInfo<${this.contractAddress}::berserker_coin::BsAptos>`
-    )
-    console.log(data)
-    // this.stakerResourceAddress
-    // 0x1::coin::CoinInfo<0x43e1bb2485a7cd76916a2783baa80bb5301f3c769a45ed761ae288b7568107b3::berserker_coin::BsAptos>
-
-    throw new Error('No implemented')
+    )) as any
+    const currentSupply = rawData.data.supply.vec[0].integer.vec[0].value
+    return Number.parseInt(currentSupply)
   }
 
-  public async getExchangeRate() {
-    //
-    //TODO: Add implementation
-    // berserker supply
-
-    throw new Error('No implemented')
+  public async getExchangeRate(): Promise<number> {
+    // const exchangeRate = await this.getAllStakedAptos() / await this.getBsAptosSupply();
+    // TODO: tmp optimize time
+    return Promise.resolve(1)
   }
 
   // PAYLOADS
