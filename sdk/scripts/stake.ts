@@ -15,8 +15,15 @@ const main = async () => {
   //TODO: tmp solution (require to load valid PDA)
   await staker.getState()
 
-  const allStakedAptos = await staker.getAllStakedAptos()
-  console.log(`allStakedAptos = ${allStakedAptos}`)
+  // console.log(`stakerResource = ${staker.getResourceAccountAddress()}`)
+
+  const bsAptosBalance = await staker.getBsAptosBalance(admin.address())
+  console.log(`bsAptosBalance = ${bsAptosBalance}`)
+
+  // const allStakedAptos = await staker.getAllStakedAptos()
+  // console.log(`allStakedAptos = ${allStakedAptos}`)
+
+  // await staker.getBsAptosInfo()
 }
 
 main()
