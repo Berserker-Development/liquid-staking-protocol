@@ -12,7 +12,7 @@ import {
 import { sha3_256 } from 'js-sha3'
 import { Address, RawTransaction as RawTxn, TransactionPayload } from './types'
 import toHex from 'to-hex'
-import {sleep, UnconnectedWallet} from './utils'
+import { sleep, UnconnectedWallet } from './utils'
 
 const { AccountAddress, ChainId, EntryFunction, TransactionPayloadEntryFunction, RawTransaction } =
   TxnBuilderTypes
@@ -86,6 +86,16 @@ export class Staker {
     return Promise.resolve(res.hash)
   }
 
+  async multiSignAndSend(rawTxs: Types.TransactionPayload[]) {
+    if (!this.wallet) throw new Error('Wallet is not connected')
+
+    const signedTxns: Uint8Array[] = await this.wallet.signAllTransactions(rawTxs)
+
+    const res = await Promise.all(signedTxns.map(txn => this.aptosClient.submitSignedBCSTransaction(txn)))
+    await sleep(2000)
+    return Promise.all(res.map(singleRes => Promise.resolve(singleRes.hash)))
+  }
+
   public async faucet(address: MaybeHexString, amount: number) {
     await this.faucetClient.fundAccount(address, amount)
   }
@@ -106,6 +116,12 @@ export class Staker {
     return await this.signAndSend(scriptFunctionPayload)
   }
 
+  public async unstakeAndClaim(amount: number) {
+    const scriptFunctionPayloadUnstake: Types.TransactionPayload = await this.unstakePayload(amount)
+    const scriptFunctionPayloadClaim: Types.TransactionPayload = await this.claimPayload()
+    return await this.multiSignAndSend([scriptFunctionPayloadUnstake, scriptFunctionPayloadClaim])
+  }
+
   public async addValidator() {
     const scriptFunctionPayload: Types.TransactionPayload = await this.addValidatorPayload()
     return await this.signAndSend(scriptFunctionPayload)
@@ -124,7 +140,7 @@ export class Staker {
         `${this.contractAddress}::core::State`
       )
     ).data as any
-    const state: State = {stakerAddress: rawState.staker_address}
+    const state: State = { stakerAddress: rawState.staker_address }
 
     this.stakerResourceAddress = state.stakerAddress
     return state
