@@ -11,6 +11,12 @@ const main = async () => {
 
   const balanceAfter = await staker.getAptosCoinBalance(admin.address())
   console.log(`balance after = ${balanceAfter}`)
+
+  //TODO: tmp solution (require to load valid PDA)
+  await staker.getState()
+
+  const allStakedAptos = await staker.getAllStakedAptos()
+  console.log(`allStakedAptos = ${allStakedAptos}`)
 }
 
 main()

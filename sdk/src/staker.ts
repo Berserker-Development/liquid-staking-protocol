@@ -184,6 +184,10 @@ export class Staker {
     }
   }
 
+  public async getAllStakedAptos() {
+    return this.getAptosCoinBalance(this.stakerResourceAddress)
+  }
+
   public async getStakePool(owner: MaybeHexString) {
     return (await this.aptosClient.getAccountResource(owner, `0x1::stake::StakePool`)).data as any
   }
