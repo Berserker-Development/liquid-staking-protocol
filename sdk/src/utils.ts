@@ -59,6 +59,22 @@ export class TestWallet implements IWallet {
   }
 }
 
+export class UnconnectedWallet implements IWallet {
+  publicKey: AptosPublicKey;
+
+  constructor() {
+    this.publicKey = new AptosPublicKey('0x')
+  }
+
+  async signTransaction(tx: TransactionPayload, max_gas_amount?: string): Promise<Uint8Array> {
+    throw new Error('Unconnected wallet')
+  }
+
+  async signAllTransactions(txs: TransactionPayload[]): Promise<Uint8Array[]> {
+    throw new Error('Unconnected wallet')
+  }
+}
+
 export class AptosPublicKey {
   private readonly hexString: string
 

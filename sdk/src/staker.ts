@@ -12,7 +12,7 @@ import {
 import { sha3_256 } from 'js-sha3'
 import { Address, RawTransaction as RawTxn, TransactionPayload } from './types'
 import toHex from 'to-hex'
-import { sleep } from './utils'
+import {sleep, UnconnectedWallet} from './utils'
 
 const { AccountAddress, ChainId, EntryFunction, TransactionPayloadEntryFunction, RawTransaction } =
   TxnBuilderTypes
@@ -29,8 +29,8 @@ export class Staker {
     const { aptosClient, faucetClient, wallet, contractAddress } = params
     this.aptosClient = aptosClient
     this.faucetClient = faucetClient
-    this.wallet = wallet
     this.contractAddress = contractAddress
+    this.wallet = wallet ?? new UnconnectedWallet()
     // TODO: calculating Resource account not work
     this.stakerResourceAddress = Staker.getResourceAccountAddress(
       new HexString(contractAddress),
@@ -40,6 +40,10 @@ export class Staker {
 
   public static async build(params: StakerParams): Promise<Staker> {
     return new Staker(params)
+  }
+
+  public changeWallet(wallet: IWallet) {
+    this.wallet = wallet
   }
 
   private static getResourceAccountAddress(address: HexString, seed: string) {

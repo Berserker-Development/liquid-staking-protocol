@@ -41,7 +41,7 @@ export interface StakingConfig {
 export interface StakerParams {
   aptosClient: AptosClient
   faucetClient: FaucetClient
-  wallet: IWallet
+  wallet?: IWallet
   contractAddress: Address
 }
 
