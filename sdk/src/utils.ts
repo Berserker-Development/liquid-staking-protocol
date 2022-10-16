@@ -17,6 +17,7 @@ export const VALIDATOR_PUBKEY = '7a4b42b50d724ad70e4ea56c1e4d4c5c9cc94d56ad5b169
 export const VALIDATOR_PRIVKEY =
   '0xb2e9ca5a61a842d75e29a5cb9cea053af9847f61e5abf2f4ff517d77ad066568'
 const CONFIG_PATH = '../.aptos/config.yaml'
+export const CONTRACT_ADDRESS = '0x43e1bb2485a7cd76916a2783baa80bb5301f3c769a45ed761ae288b7568107b3'
 
 export class TestWallet implements IWallet {
   account: AptosAccount
