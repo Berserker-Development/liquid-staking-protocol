@@ -45,11 +45,11 @@ describe('Init staker', () => {
   })
   it('init', async () => {
     const stakerFee: number = 100
-    const hashIx = await staker.init(true, stakerFee)
+    const hashIx = await staker.init(stakerFee)
     console.log('\x1b[33m Tx hash ', hashIx)
     const stakerResource: StakerResource = await staker.getStakerResource()
 
-    assert(stakerResource.fee === stakerFee, 'Invalid staker fee')
+    assert(stakerResource.protocolFee === stakerFee, 'Invalid staker fee')
     assert(
       stakerResource.stakerSignerCap.account ===
         '0x' + getResourceAccountAddress(new HexString(contractAddress), 'Staker'),

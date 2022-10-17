@@ -1,6 +1,6 @@
 {
-  "name": "sdk",
-  "version": "0.0.1",
+  "name": "@berserker-development/staker",
+  "version": "0.0.4",
   "author": "Wojciech Cichocki",
   "description": "",
   "main": "lib/index.js",
@@ -12,14 +12,17 @@
     "publish": "ts-node scripts/publish.ts",
     "compile": "ts-node scripts/compile.ts",
     "unit-test": "ts-node scripts/unit-tests.ts",
+    "init": "ts-node scripts/init.ts",
     "stake": "ts-node scripts/stake.ts",
+    "unstake": "ts-node scripts/unstake.ts",
     "join": "ts-node scripts/join.ts",
     "add-validator": "ts-node scripts/add-validator.ts",
-    "get-validators": "ts-node scripts/get-validators.ts"
+    "get-validators": "ts-node scripts/get-validators.ts",
+    "build": "tsc"
   },
   "keywords": [],
   "dependencies": {
-    "aptos": "1.3.14",
+    "aptos": "1.3.16",
     "bs58": "^5.0.0",
     "cross-fetch": "^3.1.5",
     "js-sha3": "^0.8.0",
