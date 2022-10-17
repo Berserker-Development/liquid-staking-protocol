@@ -50,7 +50,8 @@ export class Staker {
     const seedHex: string = toHex(seed)
     const addressArray: Uint8Array = address.toUint8Array()
     const seedArray: Uint8Array = Uint8Array.from(Buffer.from(seedHex, 'hex'))
-    return sha3_256(new Uint8Array([...addressArray, ...seedArray]))
+    const nonceArray: Uint8Array = Uint8Array.from(Buffer.from('ff', 'hex'))
+    return sha3_256(new Uint8Array([...addressArray, ...seedArray, ...nonceArray]))
   }
 
   public getResourceAccountAddress() {

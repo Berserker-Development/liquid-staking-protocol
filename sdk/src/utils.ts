@@ -1,7 +1,7 @@
 import * as SHA3 from 'js-sha3'
 import { sha3_256 } from 'js-sha3'
 import base58 from 'bs58'
-import {AptosAccount, AptosClient, FaucetClient, HexString} from 'aptos'
+import { AptosAccount, AptosClient, FaucetClient, HexString } from 'aptos'
 import * as yaml from 'js-yaml'
 import * as path from 'path'
 import { promises as fsPromises } from 'fs'
@@ -61,7 +61,7 @@ export class TestWallet implements IWallet {
 }
 
 export class UnconnectedWallet implements IWallet {
-  publicKey: AptosPublicKey;
+  publicKey: AptosPublicKey
 
   constructor() {
     this.publicKey = new AptosPublicKey('0x')
@@ -131,7 +131,8 @@ export const getResourceAccountAddress = (address: HexString, seed: string) => {
   const seedHex: string = toHex(seed)
   const addressArray: Uint8Array = address.toUint8Array()
   const seedArray: Uint8Array = Uint8Array.from(Buffer.from(seedHex, 'hex'))
-  return sha3_256(new Uint8Array([...addressArray, ...seedArray]))
+  const nonceArray: Uint8Array = Uint8Array.from(Buffer.from('ff', 'hex'))
+  return sha3_256(new Uint8Array([...addressArray, ...seedArray, ...nonceArray]))
 }
 
 export const init = async (nodeUrl: string = TESTNET_URL, faucet: string = FAUCET_URL) => {
