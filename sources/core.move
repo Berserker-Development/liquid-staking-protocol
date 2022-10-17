@@ -39,7 +39,7 @@ module Staking::core {
     }
     struct Validator has store, drop {
         validator_address: address,
-        validator_signer_cap: account::SignerCapability,
+        signer_cap: account::SignerCapability,
         current_stake: u64
         //TODO add index
     }
@@ -50,7 +50,7 @@ module Staking::core {
         pending_claims: SimpleMap<address, Claim>,
         claims_accumulator: u64,
         validators: vector<Validator>,
-        validator_count: u64
+        validator_nounce: u64
     }
 
     /// INIT
@@ -73,7 +73,7 @@ module Staking::core {
             pending_claims: simple_map::create<address, Claim>(),
             claims_accumulator: 0u64,
             validators: vector::empty<Validator>(),
-            validator_count: 0u64
+            validator_nounce: 0u64
         });
 
 
@@ -94,35 +94,50 @@ module Staking::core {
         network_addresses: vector<u8>,
         fullnode_addresses: vector<u8>,
     ) acquires State, Staker {
-        // TODO add validator params
         let state = borrow_global<State>(ADMIN_ADDRESS);
         let staker = borrow_global_mut<Staker>(state.staker_address);
         let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
-        let bytes = bcs::to_bytes(&staker.validator_count); //TODO think about seed 
-        staker.validator_count = staker.validator_count + 1;
+
+        /*  NORMAL FLOW
+        // create seed to new validator resource account
+        let bytes = bcs::to_bytes(&staker.validator_nounce); //TODO think about seed 
+        staker.validator_nounce = staker.validator_nounce + 1;
         vector::append(&mut bytes, STAKER_SEED);
 
         // create valdator resource account
-        let (validator_signer, validator_signer_cap) = account::create_resource_account(&staker_signer, bytes); // TODO
+        let (validator_signer, validator_signer_cap) = account::create_resource_account(&staker_signer, bytes);
         coin::register<AptosCoin>(&validator_signer);
 
         vector::push_back(
             &mut staker.validators,
             Validator{
-                validator_address: signer::address_of(&validator_signer),
+                address: signer::address_of(&validator_signer),
                 validator_signer_cap,
                 current_stake: 0
             }
         );
 
-        // our validator // TODO use set of validator with uniqe pda
         stake::initialize_validator(
             &validator_signer, consensus_pubkey, proof_of_possession, network_addresses, fullnode_addresses
         );
+        */
+
+        // 
+
+        ///////// TEMPORARY FLOW valdidator laready exists and we he to load and initalize_validator 
+        let validator = vector::borrow( &staker.validators, 0);
+        let validator_signer = account::create_signer_with_capability(&validator.signer_cap);
+
+        stake::initialize_validator(
+            &validator_signer, consensus_pubkey, proof_of_possession, network_addresses, fullnode_addresses
+        );
+        /////////////////////////////
 
         // TODO add posibility to add external validator
         // stake::initialize_stake_owner
     }
+    
+    // TODO remove validator
 
     ///// VALIDATOR MANAGMENT
 
@@ -155,7 +170,7 @@ module Staking::core {
 
         // get validator signer
         let validator = vector::borrow(&staker.validators, 0); // instead of 0 choose validator
-        let validator_signer = account::create_signer_with_capability(&validator.validator_signer_cap);
+        let validator_signer = account::create_signer_with_capability(&validator.signer_cap);
         let validator_address = signer::address_of(&validator_signer);
         stake::join_validator_set(&validator_signer, validator_address);
     }
@@ -180,7 +195,7 @@ module Staking::core {
 
         // get validator signer
         let validator = vector::borrow(&staker.validators, 0); // instead of 0 choose validator
-        let validator_signer = account::create_signer_with_capability(&validator.validator_signer_cap);
+        let validator_signer = account::create_signer_with_capability(&validator.signer_cap);
 
         coin::transfer<AptosCoin>(account, signer::address_of(&validator_signer), aptos_amount);
         stake::add_stake(&validator_signer, aptos_amount);
@@ -218,7 +233,7 @@ module Staking::core {
         staker.claims_accumulator = staker.claims_accumulator + aptos_amount;
 
         let validator = vector::borrow(&staker.validators, 0); // instead of 0 choose validator
-        let validator_signer = account::create_signer_with_capability(&validator.validator_signer_cap);
+        let validator_signer = account::create_signer_with_capability(&validator.signer_cap);
         stake::unlock(&validator_signer, aptos_amount);
 
     }
@@ -257,7 +272,7 @@ module Staking::core {
 
         // get validator signer
         let validator = vector::borrow(&staker.validators, 0); // instead of 0 choose validator
-        let validator_signer = account::create_signer_with_capability(&validator.validator_signer_cap);
+        let validator_signer = account::create_signer_with_capability(&validator.signer_cap);
 
         let (active, inactive, pending_active, pending_inactive) = stake::get_stake(signer::address_of(&validator_signer));
         // contorlled aptos - claims accumulator
@@ -384,7 +399,7 @@ module Staking::core {
         let state = borrow_global<State>(ADMIN_ADDRESS);
         let staker = borrow_global<Staker>(state.staker_address);
         let validator = vector::borrow(&staker.validators,0);
-        let validator_signer = account::create_signer_with_capability(&validator.validator_signer_cap);
+        let validator_signer = account::create_signer_with_capability(&validator.signer_cap);
         // increase controlled aptos by mint aptos to validator and stake
         stake::mint(&validator_signer, aptos_amount);
         stake::add_stake(&validator_signer, aptos_amount);
