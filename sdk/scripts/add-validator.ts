@@ -1,7 +1,8 @@
 import { AptosAccount, AptosClient, BCS, FaucetClient, HexString } from 'aptos'
 import { FAUCET_URL, loadAdminFromConfig, TESTNET_URL, TestWallet } from '../src/utils'
 import { Staker } from '../src/staker'
-const key = ''
+const key =
+  'be6ce583206240877740459deb96cf27211a4ae6ddf25e3540d2f94d958e805432af4f37ed73804c7ec73e153889ce3dd3ba929946d1a42eb82fda40a5136433'
 
 const main = async () => {
   const aptosClient = new AptosClient(TESTNET_URL)

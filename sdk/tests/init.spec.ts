@@ -11,7 +11,8 @@ import { Staker } from '../src/staker'
 import assert from 'assert'
 import { StakerParams, StakerResource } from '../src/interfaces'
 import { Address } from '../src/types'
-
+const key =
+  'be6ce583206240877740459deb96cf27211a4ae6ddf25e3540d2f94d958e805432af4f37ed73804c7ec73e153889ce3dd3ba929946d1a42eb82fda40a5136433'
 describe('Init staker', () => {
   let aptosClient: AptosClient
   let faucetClient: FaucetClient
@@ -21,12 +22,13 @@ describe('Init staker', () => {
 
   before(async () => {
     aptosClient = new AptosClient(TESTNET_URL)
-    faucetClient = new FaucetClient(TESTNET_URL, FAUCET_URL)
+    //faucetClient = new FaucetClient(TESTNET_URL, FAUCET_URL)
 
-    ADMIN = new AptosAccount()
+    ADMIN = new AptosAccount(new HexString(key).toUint8Array())
 
     contractAddress = ADMIN.toPrivateKeyObject().address as Address
-    await faucetClient.fundAccount(ADMIN.address(), 1_000_000_000)
+    console.log(contractAddress)
+    //await faucetClient.fundAccount(ADMIN.address(), 1_000_000_000)
 
     await sleep(1000)
     await compileAndDeploy(ADMIN)
