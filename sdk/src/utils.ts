@@ -10,14 +10,14 @@ import toHex from 'to-hex'
 import { TransactionPayload, EntryFunctionPayload } from 'aptos/src/generated/index'
 import { Staker } from './staker'
 
-export const TESTNET_URL = 'https://fullnode.devnet.aptoslabs.com/v1'
+export const TESTNET_URL = 'https://fullnode.testnet.aptoslabs.com/v1'
 //export const TESTNET_URL = 'https://rpc.aptos.nightly.app'
 export const FAUCET_URL = 'https://faucet.devnet.aptoslabs.com'
 export const VALIDATOR_PUBKEY = '7a4b42b50d724ad70e4ea56c1e4d4c5c9cc94d56ad5b1690214ba84f39cea46e'
 export const VALIDATOR_PRIVKEY =
   '0xb2e9ca5a61a842d75e29a5cb9cea053af9847f61e5abf2f4ff517d77ad066568'
 const CONFIG_PATH = '../.aptos/config.yaml'
-export const CONTRACT_ADDRESS = '0x43e1bb2485a7cd76916a2783baa80bb5301f3c769a45ed761ae288b7568107b3'
+export const CONTRACT_ADDRESS = '0xa866f07688818f40856e1eb876777b11f8762946f7c80424b394cd199f918262'
 
 export class TestWallet implements IWallet {
   account: AptosAccount

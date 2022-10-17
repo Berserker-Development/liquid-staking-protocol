@@ -206,7 +206,7 @@ module Staking::core {
     public fun get_all_aptos_under_control(): u64 acquires State, Staker {
         let state = borrow_global<State>(ADMIN_ADDRESS);
         let staker = borrow_global<Staker>(state.staker_address);
-        let staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
+        let _staker_signer = account::create_signer_with_capability(&staker.staker_signer_cap);
 
         coin::balance<AptosCoin>(state.staker_address)
         //TODO: get_stale
