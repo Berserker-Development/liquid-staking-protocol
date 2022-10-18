@@ -31,7 +31,6 @@ export class Staker {
     this.faucetClient = faucetClient
     this.contractAddress = contractAddress
     this.wallet = wallet ?? new UnconnectedWallet()
-    // TODO: calculating Resource account not work
     this.stakerResourceAddress = Staker.calculateResourceAccountAddress(
       new HexString(contractAddress),
       STAKER_SEED
@@ -50,7 +49,8 @@ export class Staker {
     const seedHex: string = toHex(seed)
     const addressArray: Uint8Array = address.toUint8Array()
     const seedArray: Uint8Array = Uint8Array.from(Buffer.from(seedHex, 'hex'))
-    return sha3_256(new Uint8Array([...addressArray, ...seedArray]))
+    const nonceArray: Uint8Array = Uint8Array.from(Buffer.from('ff', 'hex'))
+    return sha3_256(new Uint8Array([...addressArray, ...seedArray, ...nonceArray]))
   }
 
   public getResourceAccountAddress() {
@@ -139,19 +139,6 @@ export class Staker {
   }
 
   // QUERIES
-  public async getState() {
-    const rawState = (
-      await this.aptosClient.getAccountResource(
-        this.contractAddress,
-        `${this.contractAddress}::core::State`
-      )
-    ).data as any
-    const state: State = { stakerAddress: rawState.staker_address }
-
-    this.stakerResourceAddress = state.stakerAddress
-    return state
-  }
-
   public async getAptosCoinBalance(address: MaybeHexString): Promise<number> {
     const aptosCoinStore = (await this.aptosClient.getAccountResource(
       address,
