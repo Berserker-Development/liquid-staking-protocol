@@ -6,17 +6,13 @@ import {
   StakerParams,
   StakerResource,
   StakingConfig,
+  State,
   ValidatorSet
 } from './interfaces'
 import { sha3_256 } from 'js-sha3'
-import {
-  Address,
-  RawTransaction as RawTxn,
-  TransactionPayload,
-  TransactionPayloadEntryFunction as TransactionPayloadEntry
-} from './types'
+import { Address, RawTransaction as RawTxn, TransactionPayload } from './types'
 import toHex from 'to-hex'
-import { sleep } from './utils'
+import { sleep, UnconnectedWallet } from './utils'
 
 const { AccountAddress, ChainId, EntryFunction, TransactionPayloadEntryFunction, RawTransaction } =
   TxnBuilderTypes
@@ -33,9 +29,10 @@ export class Staker {
     const { aptosClient, faucetClient, wallet, contractAddress } = params
     this.aptosClient = aptosClient
     this.faucetClient = faucetClient
-    this.wallet = wallet
     this.contractAddress = contractAddress
-    this.stakerResourceAddress = this.getResourceAccountAddress(
+    this.wallet = wallet ?? new UnconnectedWallet()
+    // TODO: calculating Resource account not work
+    this.stakerResourceAddress = Staker.calculateResourceAccountAddress(
       new HexString(contractAddress),
       STAKER_SEED
     )
@@ -45,30 +42,35 @@ export class Staker {
     return new Staker(params)
   }
 
-  private getResourceAccountAddress(address: HexString, seed: string) {
+  public changeWallet(wallet: IWallet) {
+    this.wallet = wallet
+  }
+
+  public static calculateResourceAccountAddress(address: HexString, seed: string) {
     const seedHex: string = toHex(seed)
     const addressArray: Uint8Array = address.toUint8Array()
     const seedArray: Uint8Array = Uint8Array.from(Buffer.from(seedHex, 'hex'))
     return sha3_256(new Uint8Array([...addressArray, ...seedArray]))
   }
 
-  public async init(monitorSupply: boolean, amount: number) {
-    const scriptFunctionPayload: Types.TransactionPayload = await this.initPayload(
-      monitorSupply,
-      amount
-    )
+  public getResourceAccountAddress() {
+    return this.stakerResourceAddress
+  }
+
+  public async init(protocolFee: number) {
+    const scriptFunctionPayload: Types.TransactionPayload = await this.initPayload(protocolFee)
 
     return await this.signAndSend(scriptFunctionPayload)
   }
 
   public async getRawTransaction(payload: TransactionPayload): Promise<RawTxn> {
     const [{ sequence_number: sequenceNumber }, chainId] = await Promise.all([
-      this.aptosClient.getAccount(this.wallet.account.address()),
+      this.aptosClient.getAccount(this.wallet.publicKey.address()),
       this.aptosClient.getChainId()
     ])
 
-    const rawTxn: RawTxn = new RawTransaction(
-      AccountAddress.fromHex(this.wallet.account.address()), // from
+    return new RawTransaction(
+      AccountAddress.fromHex(this.wallet.publicKey.address()), // from
       BigInt(sequenceNumber), // sequence number
       payload, // payload
       1000n, // max_gas_amount
@@ -76,8 +78,6 @@ export class Staker {
       BigInt(Math.floor(Date.now() / 1000) + 10), // expiration_time 10 seconds from now
       new ChainId(chainId) // chain_id
     )
-
-    return rawTxn
   }
 
   async signAndSend(rawTx: Types.TransactionPayload) {
@@ -88,6 +88,18 @@ export class Staker {
     await sleep(2000)
     // await this.aptosClient.waitForTransaction(res.hash)
     return Promise.resolve(res.hash)
+  }
+
+  async multiSignAndSend(rawTxs: Types.TransactionPayload[]) {
+    if (!this.wallet) throw new Error('Wallet is not connected')
+
+    const signedTxns: Uint8Array[] = await this.wallet.signAllTransactions(rawTxs)
+
+    const res = await Promise.all(
+      signedTxns.map(txn => this.aptosClient.submitSignedBCSTransaction(txn))
+    )
+    await sleep(2000)
+    return Promise.all(res.map(singleRes => Promise.resolve(singleRes.hash)))
   }
 
   public async faucet(address: MaybeHexString, amount: number) {
@@ -119,6 +131,16 @@ export class Staker {
     )
     return await this.signAndSend(scriptFunctionPayload)
   }
+  public async claim() {
+    const scriptFunctionPayload: Types.TransactionPayload = await this.claimPayload()
+    return await this.signAndSend(scriptFunctionPayload)
+  }
+
+  public async unstakeAndClaim(amount: number) {
+    const scriptFunctionPayloadUnstake: Types.TransactionPayload = await this.unstakePayload(amount)
+    const scriptFunctionPayloadClaim: Types.TransactionPayload = await this.claimPayload()
+    return await this.multiSignAndSend([scriptFunctionPayloadUnstake, scriptFunctionPayloadClaim])
+  }
 
   public async join() {
     const scriptFunctionPayload = await this.joinPayload()
@@ -126,12 +148,25 @@ export class Staker {
   }
 
   // QUERIES
+  public async getState() {
+    const rawState = (
+      await this.aptosClient.getAccountResource(
+        this.contractAddress,
+        `${this.contractAddress}::core::State`
+      )
+    ).data as any
+    const state: State = { stakerAddress: rawState.staker_address }
+
+    this.stakerResourceAddress = state.stakerAddress
+    return state
+  }
+
   public async getAptosCoinBalance(address: MaybeHexString): Promise<number> {
-    const testCoinStore = (await this.aptosClient.getAccountResource(
+    const aptosCoinStore = (await this.aptosClient.getAccountResource(
       address,
       '0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>'
     )) as any as AptosCoin
-    const balance: string = testCoinStore.data.coin.value
+    const balance: string = aptosCoinStore.data.coin.value
     return Number.parseInt(balance)
   }
 
@@ -159,9 +194,13 @@ export class Staker {
     ).data as any
 
     return {
-      fee: Number(data.protocol_fee),
+      protocolFee: Number(data.protocol_fee),
       stakerSignerCap: data.staker_signer_cap
     }
+  }
+
+  public async getAllStakedAptos() {
+    return this.getAptosCoinBalance(this.stakerResourceAddress)
   }
 
   public async getStakePool(owner: MaybeHexString) {
@@ -178,13 +217,37 @@ export class Staker {
       .data as StakingConfig
   }
 
+  public async getBsAptosBalance(address: MaybeHexString): Promise<number> {
+    const bsAptosCoinStore = (await this.aptosClient.getAccountResource(
+      address,
+      `0x1::coin::CoinStore<${this.contractAddress}::berserker_coin::BsAptos>`
+    )) as any
+    const balance: string = bsAptosCoinStore.data.coin.value
+    return Number.parseInt(balance)
+  }
+
+  public async getBsAptosSupply(): Promise<number> {
+    const rawData = (await this.aptosClient.getAccountResource(
+      this.contractAddress,
+      `0x1::coin::CoinInfo<${this.contractAddress}::berserker_coin::BsAptos>`
+    )) as any
+    const currentSupply = rawData.data.supply.vec[0].integer.vec[0].value
+    return Number.parseInt(currentSupply)
+  }
+
+  public async getExchangeRate(): Promise<number> {
+    // const exchangeRate = await this.getAllStakedAptos() / await this.getBsAptosSupply();
+    // TODO: tmp optimize time
+    return Promise.resolve(1)
+  }
+
   // PAYLOADS
-  public async initPayload(monitorSupply: boolean, fee: number): Promise<Types.TransactionPayload> {
+  public async initPayload(protocolFee: number): Promise<Types.TransactionPayload> {
     return {
       type: 'entry_function_payload',
       function: `${this.contractAddress}::core::init`,
       type_arguments: [],
-      arguments: [monitorSupply, fee]
+      arguments: [protocolFee]
     }
   }
 
@@ -203,6 +266,15 @@ export class Staker {
       function: `${this.contractAddress}::core::unstake`,
       type_arguments: [],
       arguments: [newValue]
+    }
+  }
+
+  public async claimPayload(): Promise<Types.TransactionPayload> {
+    return {
+      type: 'entry_function_payload',
+      function: `${this.contractAddress}::core::claim`,
+      type_arguments: [],
+      arguments: []
     }
   }
 

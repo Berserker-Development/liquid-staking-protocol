@@ -14,7 +14,7 @@ module Staking::berserker_coin {
     /// Account has no capabilities (burn/mint).
     const ENO_CAPABILITIES: u64 = 1;
 
-    struct BsAptos has key { }
+    struct BsAptos has key {}
 
     struct Capabilities<phantom CoinType> has key {
         burn_cap: BurnCapability<CoinType>,
@@ -24,23 +24,20 @@ module Staking::berserker_coin {
 
     public fun initialize_bsaptos(
         account: &signer,
-        capabilities_owner: &signer,
-        monitor_supply: bool) {
-
+        capabilities_owner: &signer) {
         let (burn_cap, freeze_cap, mint_cap) = coin::initialize<BsAptos>(
             account,
             string::utf8(COIN_NAME),
             string::utf8(TICKER),
             DECIMALS,
-            monitor_supply,
+            true,
         );
 
-        move_to(capabilities_owner, Capabilities<BsAptos>{
+        move_to(capabilities_owner, Capabilities<BsAptos> {
             burn_cap,
             freeze_cap,
             mint_cap,
         });
-        
     }
 
     public fun is_initialized(): bool {
@@ -50,18 +47,20 @@ module Staking::berserker_coin {
     public fun get_supply(): u64 {
         let supply = &coin::supply<BsAptos>();
         if (option::is_some(supply)) {
-            (*option::borrow(supply) as u64)
+            let supply = *option::borrow(supply);
+            assert!(supply < (MAX_U64 as u128), 0);
+            (supply as u64)
         } else {
             0u64
         }
     }
 
-    public fun mint( // TODO add direct_mint using user sign
+    // TODO add direct_mint using user sign
+    public fun mint(
         authority: &signer,
         dst_addr: address,
         amount: u64,
     ) acquires Capabilities {
-        assert!(get_supply() < MAX_U64, 0);
         let authority_addr = signer::address_of(authority);
 
         assert!(
@@ -98,7 +97,7 @@ module Staking::berserker_coin {
         admin: &signer
     ) {
         assert!(!is_initialized(), 0);
-        initialize_bsaptos(admin, mint_authority, true);
+        initialize_bsaptos(admin, mint_authority);
         assert!(is_initialized(), 0);
     }
 
@@ -108,7 +107,7 @@ module Staking::berserker_coin {
         destination: &signer,
         admin: &signer,
         mint_authority: &signer
-    ) acquires Capabilities{
+    ) acquires Capabilities {
         let source_addr = signer::address_of(source);
         let destination_addr = signer::address_of(destination);
         let _admin_addr = signer::address_of(admin);
@@ -117,7 +116,7 @@ module Staking::berserker_coin {
         aptos_framework::account::create_account_for_test(destination_addr);
         aptos_framework::account::create_account_for_test(mint_authority_addr);
 
-        initialize_bsaptos(admin, mint_authority, true);
+        initialize_bsaptos(admin, mint_authority);
         assert!(coin::is_coin_initialized<BsAptos>(), 0);
 
         coin::register<BsAptos>(mint_authority);

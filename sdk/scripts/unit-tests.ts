@@ -1,4 +1,3 @@
-import { AptosAccount } from 'aptos'
 import { loadAdminFromConfig, unitTests } from '../src/utils'
 
 const main = async () => {
