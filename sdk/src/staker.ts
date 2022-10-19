@@ -20,7 +20,7 @@ const STAKER_SEED = 'Staker'
 
 export class Staker {
   private aptosClient: AptosClient
-  private faucetClient: FaucetClient
+  private faucetClient?: FaucetClient
   private wallet: IWallet
   private contractAddress: Address
   private stakerResourceAddress: Address
@@ -43,6 +43,10 @@ export class Staker {
 
   public changeWallet(wallet: IWallet) {
     this.wallet = wallet
+  }
+
+  public changeFaucetClient(faucetClient: FaucetClient) {
+    this.faucetClient = faucetClient
   }
 
   private static calculateResourceAccountAddress(address: HexString, seed: string) {
@@ -103,6 +107,9 @@ export class Staker {
   }
 
   public async faucet(address: MaybeHexString, amount: number) {
+    if(this.faucetClient === null || this.faucetClient === undefined) {
+      throw new Error('Faucet not provider')
+    }
     await this.faucetClient.fundAccount(address, amount)
   }
 
