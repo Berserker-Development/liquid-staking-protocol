@@ -45,7 +45,7 @@ export class Staker {
     this.wallet = wallet
   }
 
-  private static calculateResourceAccountAddress(address: HexString, seed: string) {
+  public static calculateResourceAccountAddress(address: HexString, seed: string) {
     const seedHex: string = toHex(seed)
     const addressArray: Uint8Array = address.toUint8Array()
     const seedArray: Uint8Array = Uint8Array.from(Buffer.from(seedHex, 'hex'))
@@ -117,6 +117,20 @@ export class Staker {
     return await this.signAndSend(scriptFunctionPayload)
   }
 
+  public async addValidator(
+    consensusPubkey: Uint8Array,
+    proofOfPossession: Uint8Array,
+    networkAddresses: string,
+    fullnodeAddresses: string
+  ) {
+    const scriptFunctionPayload: Types.TransactionPayload = await this.addValidatorPayload(
+      consensusPubkey,
+      proofOfPossession,
+      networkAddresses,
+      fullnodeAddresses
+    )
+    return await this.signAndSend(scriptFunctionPayload)
+  }
   public async claim() {
     const scriptFunctionPayload: Types.TransactionPayload = await this.claimPayload()
     return await this.signAndSend(scriptFunctionPayload)
@@ -126,11 +140,6 @@ export class Staker {
     const scriptFunctionPayloadUnstake: Types.TransactionPayload = await this.unstakePayload(amount)
     const scriptFunctionPayloadClaim: Types.TransactionPayload = await this.claimPayload()
     return await this.multiSignAndSend([scriptFunctionPayloadUnstake, scriptFunctionPayloadClaim])
-  }
-
-  public async addValidator() {
-    const scriptFunctionPayload: Types.TransactionPayload = await this.addValidatorPayload()
-    return await this.signAndSend(scriptFunctionPayload)
   }
 
   public async join() {
@@ -265,12 +274,17 @@ export class Staker {
     }
   }
 
-  public async addValidatorPayload(): Promise<Types.TransactionPayload> {
+  public async addValidatorPayload(
+    consensusPubkey: Uint8Array,
+    proofOfPossession: Uint8Array,
+    networkAddresses: string,
+    fullnodeAddresses: string
+  ): Promise<Types.TransactionPayload> {
     return {
       type: 'entry_function_payload',
       function: `${this.contractAddress}::core::add_validator`,
       type_arguments: [],
-      arguments: []
+      arguments: [consensusPubkey, proofOfPossession, networkAddresses, fullnodeAddresses]
     }
   }
 }
