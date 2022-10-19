@@ -17,7 +17,7 @@ export const VALIDATOR_PUBKEY = '7a4b42b50d724ad70e4ea56c1e4d4c5c9cc94d56ad5b169
 export const VALIDATOR_PRIVKEY =
   '0xb2e9ca5a61a842d75e29a5cb9cea053af9847f61e5abf2f4ff517d77ad066568'
 const CONFIG_PATH = '../.aptos/config.yaml'
-export const CONTRACT_ADDRESS = '0xa866f07688818f40856e1eb876777b11f8762946f7c80424b394cd199f918262'
+export const CONTRACT_ADDRESS = '0xa312f04ea0a5f73f9468ae22bf7a61477928b0cfcd2988c7d20f0c1ae22b1534'
 
 export class TestWallet implements IWallet {
   account: AptosAccount
@@ -123,6 +123,7 @@ export const initStaker = async (): Promise<{ staker: Staker; admin: AptosAccoun
   const admin = await loadAdminFromConfig()
   const contractAddress = admin.toPrivateKeyObject().address as string
   const wallet = new TestWallet(admin, aptosClient)
+  console.log(`contract address: ${contractAddress.toString()}`)
   const staker = await Staker.build({ aptosClient, faucetClient, wallet, contractAddress })
   return { staker, admin }
 }
