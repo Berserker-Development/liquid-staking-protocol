@@ -11,7 +11,7 @@ import { TransactionPayload, EntryFunctionPayload } from 'aptos/src/generated/in
 import { Staker } from './staker'
 
 export const TESTNET_URL = 'https://fullnode.testnet.aptoslabs.com/v1'
-//export const TESTNET_URL = 'https://rpc.aptos.nightly.app'
+// export const TESTNET_URL = 'https://rpc.aptos.nightly.app'
 export const FAUCET_URL = 'https://faucet.devnet.aptoslabs.com'
 export const VALIDATOR_PUBKEY = '7a4b42b50d724ad70e4ea56c1e4d4c5c9cc94d56ad5b1690214ba84f39cea46e'
 export const VALIDATOR_PRIVKEY =
@@ -123,7 +123,6 @@ export const initStaker = async (): Promise<{ staker: Staker; admin: AptosAccoun
   const admin = await loadAdminFromConfig()
   const contractAddress = admin.toPrivateKeyObject().address as string
   const wallet = new TestWallet(admin, aptosClient)
-  console.log(`contract address: ${contractAddress.toString()}`)
   const staker = await Staker.build({ aptosClient, faucetClient, wallet, contractAddress })
   return { staker, admin }
 }
