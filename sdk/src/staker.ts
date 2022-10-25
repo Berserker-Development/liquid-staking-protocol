@@ -107,7 +107,7 @@ export class Staker {
   }
 
   public async faucet(address: MaybeHexString, amount: number) {
-    if(this.faucetClient === null || this.faucetClient === undefined) {
+    if (this.faucetClient === null || this.faucetClient === undefined) {
       throw new Error('Faucet not provider')
     }
     await this.faucetClient.fundAccount(address, amount)
@@ -178,9 +178,20 @@ export class Staker {
       )
     ).data as any
 
+    const pendingClaims = data.pending_claims.data.map(
+      (entry: { key: string; value: { aptos_amount: string; epoch_index: string } }) => {
+        return {
+          address: entry.key,
+          amount: Number(entry.value.aptos_amount),
+          epoch: Number(entry.value.epoch_index)
+        }
+      }
+    )
+
     return {
       protocolFee: Number(data.protocol_fee),
-      stakerSignerCap: data.staker_signer_cap
+      stakerSignerCap: data.staker_signer_cap,
+      pendingClaims
     }
   }
 

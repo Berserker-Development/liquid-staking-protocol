@@ -22,6 +22,7 @@ export interface State {
 export interface StakerResource {
   protocolFee: number
   stakerSignerCap: SignerCapability
+  pendingClaims: PendingClaim[]
 }
 
 export interface SignerCapability {
@@ -43,6 +44,12 @@ export interface StakerParams {
   faucetClient?: FaucetClient
   wallet?: IWallet
   contractAddress: Address
+}
+
+export interface PendingClaim {
+  address: string,
+  amount: number
+  epoch: number
 }
 
 export interface ValidatorSet {
