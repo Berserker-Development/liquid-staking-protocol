@@ -3,6 +3,7 @@ import { AptosClient, FaucetClient, HexString, MaybeHexString, TxnBuilderTypes, 
 import {
   AptosCoin,
   IWallet,
+  PendingClaim,
   StakerParams,
   StakerResource,
   StakingConfig,
@@ -12,7 +13,7 @@ import {
 import { sha3_256 } from 'js-sha3'
 import { Address, RawTransaction as RawTxn, TransactionPayload } from './types'
 import toHex from 'to-hex'
-import { sleep, UnconnectedWallet } from './utils'
+import { AptosPublicKey, sleep, UnconnectedWallet } from './utils'
 
 const { AccountAddress, ChainId, EntryFunction, TransactionPayloadEntryFunction, RawTransaction } =
   TxnBuilderTypes
@@ -235,6 +236,18 @@ export class Staker {
     // const exchangeRate = await this.getAllStakedAptos() / await this.getBsAptosSupply();
     // TODO: tmp optimize time
     return Promise.resolve(1)
+  }
+
+  public getUserPendingClaims(
+    stakerResource: StakerResource,
+    overriddenWallet?: AptosPublicKey
+  ): PendingClaim | null {
+    const pKey = overriddenWallet ?? this.wallet.publicKey
+
+    return (
+      stakerResource.pendingClaims.find(pendingClaim => pendingClaim.address === pKey.address()) ??
+      null
+    )
   }
 
   // PAYLOADS
